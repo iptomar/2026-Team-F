@@ -13,7 +13,7 @@ const FieldWrapper = ({ label, required, children, error }) => (
   </div>
 );
 
-// 1. Componente de Etiqueta / Bloco de Texto (Label)
+// 1. Bloco de Texto (Label)
 export const FormLabel = ({ value, description }) => (
   <div className="mb-6 p-2 border-l-4 border-blue-500 bg-blue-50">
     <h3 className="text-xl font-bold text-blue-900">{value || "Título da Secção"}</h3>
