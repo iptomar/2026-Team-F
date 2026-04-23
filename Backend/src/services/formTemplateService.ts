@@ -8,6 +8,11 @@ interface CreateFormTemplateInput {
   status?: FormTemplateStatus;
 }
 
+interface UpdateFormTemplateInput {
+  name?: string;
+  description?: string;
+}
+
 export class FormTemplateService {
   private get repository(): Repository<FormTemplate> {
     return AppDataSource.getRepository(FormTemplate);
@@ -31,5 +36,21 @@ export class FormTemplateService {
 
   async findById(id: string): Promise<FormTemplate | null> {
     return this.repository.findOneBy({ id });
+  }
+
+  async update(id: string, data: UpdateFormTemplateInput): Promise<FormTemplate | null> {
+    const template = await this.repository.findOneBy({ id });
+
+    if (!template) return null;
+
+    if (data.name !== undefined) {
+      template.name = data.name;
+    }
+
+    if (data.description !== undefined) {
+      template.description = data.description;
+    }
+
+    return this.repository.save(template);
   }
 }
