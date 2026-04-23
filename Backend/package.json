@@ -11,19 +11,21 @@
     "migration:revert": "typeorm migration:revert -d src/config/database.ts"
   },
   "dependencies": {
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.14.1",
+    "cors": "^2.8.6",
+    "dotenv": "^16.4.5",
     "express": "^4.21.0",
-    "typeorm": "^0.3.20",
     "mysql2": "^3.11.0",
     "reflect-metadata": "^0.2.2",
-    "class-validator": "^0.14.1",
-    "class-transformer": "^0.5.1",
-    "dotenv": "^16.4.5"
+    "sqlite3": "^5.1.7",
+    "typeorm": "^0.3.20"
   },
   "devDependencies": {
-    "typescript": "^5.6.0",
     "@types/express": "^5.0.0",
     "@types/node": "^22.0.0",
     "ts-node": "^10.9.2",
-    "ts-node-dev": "^2.0.0"
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.6.0"
   }
 }
