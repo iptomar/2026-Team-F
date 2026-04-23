@@ -14,6 +14,23 @@ const FormEditor = () => {
   // Log para monitorização do estado (útil durante o desenvolvimento)
   console.log("Campos atuais no formulário:", fields);
 
+
+  // Função para adicionar um novo campo com estrutura robusta
+  const addField = (type) => {
+    const newField = {
+      // Usamos crypto.randomUUID() para IDs únicos e seguros (padrão moderno)
+      id: crypto.randomUUID(), 
+      type: type,
+      label: `Novo campo de ${type}`,
+      required: false, // UC15: Preparado para a tarefa de obrigatoriedade
+      options: type === FIELD_TYPES.RADIO ? ['Opção 1'] : [], // Lógica específica para Radios
+      order: fields.length + 1, // UC03: Mantém a ordem de inserção
+    };
+
+    // Atualização de estado imutável (best practice em React)
+    setFields(prevFields => [...prevFields, newField]);
+  };
+  
   return (
     <div className="p-8 max-w-4xl mx-auto">
       <h1 className="text-2xl font-bold mb-6">Editor de Formulário Dinâmico</h1>
