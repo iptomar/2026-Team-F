@@ -1,3 +1,6 @@
+// Importar módulo do Node para trabalhar com ficheiros (ler/escrever JSON)
+const fs = require('fs');
+
 // importar o Express framework backend
 const express = require('express');
 
@@ -128,4 +131,81 @@ app.get('/', (req, res) => {
 // ==========================
 app.listen(3000, () => {
     console.log('Servidor a correr em http://localhost:3000');
+});
+
+
+
+
+
+
+
+// ==========================
+// SUBMETER FORMULÁRIO (GUARDAR EM JSON)
+// ==========================
+app.post('/submit', (req, res) => {
+
+    // Extrair dados enviados no body
+    const { formId, answers } = req.body;
+
+    // ==========================
+    // 🔴 VALIDAÇÃO (ANTES DE GUARDAR)
+    // ==========================
+
+    // Verificar se existem respostas
+    if (!answers || answers.length === 0) {
+        return res.status(400).json({
+            error: 'Respostas são obrigatórias'
+        });
+    }
+
+    // Verificar cada resposta
+    for (let answer of answers) {
+
+        // Se valor estiver vazio ou undefined
+        if (!answer.value || answer.value.trim() === '') {
+            return res.status(400).json({
+                error: `Campo ${answer.fieldId} é obrigatório`
+            });
+        }
+    }
+
+    // ==========================
+    // CRIAR OBJETO DA SUBMISSÃO
+    // ==========================
+    const data = {
+        formId: formId,
+        answers: answers
+    };
+
+    // Array onde vamos guardar todas as submissões
+    let existingData = [];
+
+    // ==========================
+    // VERIFICAR SE O FICHEIRO EXISTE
+    // ==========================
+    if (fs.existsSync('submissions.json')) {
+
+        const file = fs.readFileSync('submissions.json');
+        existingData = JSON.parse(file);
+    }
+
+    // ==========================
+    // ADICIONAR NOVA SUBMISSÃO
+    // ==========================
+    existingData.push(data);
+
+    // ==========================
+    // GUARDAR NO JSON
+    // ==========================
+    fs.writeFileSync(
+        'submissions.json',
+        JSON.stringify(existingData, null, 2)
+    );
+
+    // ==========================
+    // RESPOSTA
+    // ==========================
+    res.json({
+        message: 'Submissão guardada no JSON com sucesso'
+    });
 });
