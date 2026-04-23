@@ -137,6 +137,21 @@ const FormEditor = () => {
                       />
                     </div>
 
+                    {/* Toggle Obrigatório */}
+                    <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                      <input
+                        type="checkbox"
+                        id={`required-${field.id}`}
+                        checked={editData.required || false}
+                        onChange={(e) => setEditData({ ...editData, required: e.target.checked })}
+                        className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                      />
+                      <label htmlFor={`required-${field.id}`} className="text-sm font-semibold text-gray-700 cursor-pointer">
+                        Marcar como obrigatório
+                      </label>
+                      {editData.required && <span className="ml-auto text-red-600 font-bold text-lg">*</span>}
+                    </div>
+
                     {editData.type === FIELD_TYPES.RADIO && (
                       <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-2">Opções:</label>
@@ -186,7 +201,14 @@ const FormEditor = () => {
                   // Modo de visualização
                   <>
                     <div className="mb-3 flex justify-between items-center">
-                      <span className="text-xs font-semibold text-gray-500 uppercase">Tipo: {field.type}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-semibold text-gray-500 uppercase">Tipo: {field.type}</span>
+                        {field.required && (
+                          <span className="px-2 py-1 bg-red-100 text-red-700 rounded-full text-xs font-semibold flex items-center gap-1">
+                            <span className="text-lg">*</span> Obrigatório
+                          </span>
+                        )}
+                      </div>
                       <div className="flex gap-2">
                         <button
                           onClick={() => startEditing(field)}
