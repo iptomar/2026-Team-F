@@ -67,4 +67,47 @@ export class FormTemplateController {
       res.status(500).json({ error: "Erro interno ao buscar template." });
     }
   }
+
+  async update(req: Request<{ id: string }>, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const { name, description } = req.body;
+
+      if (name === undefined && description === undefined) {
+        res.status(400).json({
+          error: "É necessário fornecer pelo menos 'name' ou 'description'.",
+        });
+        return;
+      }
+
+      if (name !== undefined) {
+        if (typeof name !== "string" || name.trim().length === 0) {
+          res.status(400).json({ error: "O campo 'name' não pode ser vazio." });
+          return;
+        }
+
+        if (name.trim().length > 255) {
+          res.status(400).json({
+            error: "O campo 'name' não pode exceder 255 caracteres.",
+          });
+          return;
+        }
+      }
+
+      const updated = await service.update(id, {
+        name: name !== undefined ? name.trim() : undefined,
+        description: description !== undefined ? description : undefined,
+      });
+
+      if (!updated) {
+        res.status(404).json({ error: "Template não encontrado." });
+        return;
+      }
+
+      res.json(updated);
+    } catch (error) {
+      console.error("Erro ao atualizar template:", error);
+      res.status(500).json({ error: "Erro interno ao atualizar template." });
+    }
+  }
 }
