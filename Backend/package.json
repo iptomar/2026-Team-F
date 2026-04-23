@@ -7,8 +7,8 @@
     "build": "tsc",
     "dev": "ts-node-dev --respawn src/index.ts",
     "start": "node dist/index.js",
-    "migration:run": "typeorm migration:run -d src/config/database.ts",
-    "migration:revert": "typeorm migration:revert -d src/config/database.ts"
+    "migration:run": "ts-node ./node_modules/typeorm/cli.js migration:run -d src/config/database.ts",
+    "migration:revert": "ts-node ./node_modules/typeorm/cli.js migration:revert -d src/config/database.ts"
   },
   "dependencies": {
     "class-transformer": "^0.5.1",
