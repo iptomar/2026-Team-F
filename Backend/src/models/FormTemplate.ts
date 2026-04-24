@@ -23,7 +23,7 @@ export class FormTemplate {
   description?: string;
 
   @Column({
-    type: "enum",
+    type: "simple-enum",
     enum: FormTemplateStatus,
     default: FormTemplateStatus.DRAFT,
   })
