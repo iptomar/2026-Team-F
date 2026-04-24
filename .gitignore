@@ -6,6 +6,10 @@ package-lock.json
 dist/
 build/
 
+# SQLite database files
+*.sqlite
+*.sqlite3
+
 # Environment variables
 .env
 .env.local
