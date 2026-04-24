@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { FormLabel, FormRadioGroup, FormCheckbox } from '../components/DynamicElements';
+import FormEditorHeader from '../components/FormEditorHeader';
 
 // Constante para garantir consistência nos tipos de dados
 const FIELD_TYPES = {
@@ -9,6 +10,20 @@ const FIELD_TYPES = {
 };
 
 const FormEditor = () => {
+  // Estado do cabeçalho do formulário
+  const [templateName, setTemplateName] = useState('');
+  const [templateDescription, setTemplateDescription] = useState('');
+  const [nameError, setNameError] = useState(null);
+
+  const handleNameChange = (value) => {
+    setTemplateName(value);
+    if (value.trim().length === 0) {
+      setNameError('O nome do formulário é obrigatório.');
+    } else {
+      setNameError(null);
+    }
+  };
+
   // O estado 'fields' será a nossa "Single Source of Truth" para o formulário
   const [fields, setFields] = useState([]);
   const [editingId, setEditingId] = useState(null);
@@ -91,6 +106,14 @@ const FormEditor = () => {
   
   return (
     <div className="p-8 max-w-4xl mx-auto">
+      <FormEditorHeader
+        name={templateName}
+        description={templateDescription}
+        onNameChange={handleNameChange}
+        onDescriptionChange={setTemplateDescription}
+        nameError={nameError}
+      />
+
       <h1 className="text-2xl font-bold mb-6">Editor de Formulário Dinâmico</h1>
       
       {/* Botões para adicionar componentes */}
