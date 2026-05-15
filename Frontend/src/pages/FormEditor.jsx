@@ -55,26 +55,6 @@ const FormEditor = () => {
   // Estado da janela Preview
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
-
-  // ======================================================
-  // RENDERIZAÇÃO DOS CAMPOS
-  // ======================================================
-  const renderField = (field) => {
-    switch (field.type) {
-      case FIELD_TYPES.LABEL:
-        return <FormLabel value={field.label} />;
-      case FIELD_TYPES.RADIO:
-        return <FormRadioGroup label={field.label} options={field.options} required={field.required} />;
-      case FIELD_TYPES.CHECKBOX:
-        return <FormCheckbox label={field.label} description={field.label} required={field.required} />;
-      case FIELD_TYPES.DROPDOWN: // <-- Novo
-        return <FormDropdown label={field.label} options={field.options} required={field.required} />;
-      default:
-        return null;
-    }
-  };
-
-
   // ======================================================
   // REMOVER CAMPO
   // ======================================================
