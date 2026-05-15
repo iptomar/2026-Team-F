@@ -3,6 +3,13 @@
 // Página principal do editor de formulários
 // ======================================================
 
+import {
+  DragDropContext,
+  Droppable,
+  Draggable
+} from '@hello-pangea/dnd';
+
+
 import React, { useState } from 'react';
 
 // ======================================================
@@ -53,6 +60,34 @@ const FormEditor = () => {
 
   // Estado da janela Preview
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+
+
+const handleDragEnd = (result) => {
+
+  // Se não houver destino
+  if (!result.destination) return;
+
+  // Copiar lista
+  const items = Array.from(fields);
+
+  // Remover item arrastado
+  const [reorderedItem] = items.splice(result.source.index, 1);
+
+  // Inserir nova posição
+  items.splice(result.destination.index, 0, reorderedItem);
+
+  // Atualizar ordem
+  const updatedItems = items.map((item, index) => ({
+    ...item,
+    order: index + 1
+  }));
+
+  setFields(updatedItems);
+};
+
+
+
+
 
 
   // ======================================================
@@ -299,38 +334,66 @@ const FormEditor = () => {
 
         ) : (
 
-          <div className="space-y-4">
+        <DragDropContext onDragEnd={handleDragEnd}>
+  <Droppable droppableId="form-fields">
+    {(provided) => (
+      <div
+        className="space-y-4"
+        {...provided.droppableProps}
+        ref={provided.innerRef}
+      >
 
-            {fields.map((field) => (
+        {fields.map((field, index) => (
 
-              <FieldCard
-                key={field.id}
-                field={field}
+          <Draggable
+            key={field.id}
+            draggableId={field.id}
+            index={index}
+          >
+            {(provided) => (
 
-                editingId={editingId}
-                editData={editData}
-                setEditData={setEditData}
+              <div
+                ref={provided.innerRef}
+                {...provided.draggableProps}
+                {...provided.dragHandleProps}
+              >
 
-                saveField={saveField}
-                cancelEditing={cancelEditing}
+                <FieldCard
+                  field={field}
 
-                startEditing={startEditing}
-                deleteField={deleteField}
+                  editingId={editingId}
+                  editData={editData}
+                  setEditData={setEditData}
 
-                FIELD_TYPES={FIELD_TYPES}
+                  saveField={saveField}
+                  cancelEditing={cancelEditing}
 
-                updateOption={updateOption}
-                removeOption={removeOption}
-                addOption={addOption}
+                  startEditing={startEditing}
+                  deleteField={deleteField}
 
-                renderField={renderField}
-              />
+                  FIELD_TYPES={FIELD_TYPES}
 
-            ))}
+                  updateOption={updateOption}
+                  removeOption={removeOption}
+                  addOption={addOption}
 
-          </div>
+                  renderField={renderField}
+                />
 
-        )}
+              </div>
+
+            )}
+          </Draggable>
+
+        ))}
+
+        {provided.placeholder}
+
+      </div>
+    )}
+  </Droppable>
+</DragDropContext>
+    )}
 
       </div>
 
