@@ -1,3 +1,6 @@
+# sqlite
+Backend/database.sqlite
+
 # Dependencies
 node_modules/
 package-lock.json
