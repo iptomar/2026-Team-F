@@ -5,7 +5,7 @@ const HomePage = ({ onCreateNew }) => {
   return (
     <div style={{ textAlign: 'center', marginTop: '100px' }}>
       <h1 style={{ fontSize: '3rem', color: '#007bff' }}>Editor de Formulários</h1>
-      <p style={{ color: '#65676b' }}>Cria formulários incríveis em segundos.</p>
+      <p style={{ color: '#65676b' }}>Cria formulários em segundos.</p>
       
       <button className="btn-blue" onClick={onCreateNew}>
         + Criar Novo Formulário
