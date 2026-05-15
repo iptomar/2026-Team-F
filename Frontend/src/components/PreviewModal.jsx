@@ -1,5 +1,6 @@
 import React from 'react';
-import { FormLabel, FormRadioGroup, FormCheckbox } from './DynamicElements';
+// Adicionar o FormDropdown no import
+import { FormLabel, FormRadioGroup, FormCheckbox, FormDropdown } from './DynamicElements';
 
 const PreviewModal = ({ isOpen, onClose, schema }) => {
   if (!isOpen) return null;
@@ -12,10 +13,14 @@ const PreviewModal = ({ isOpen, onClose, schema }) => {
         return <FormRadioGroup label={field.label} options={field.options} required={field.required} />;
       case 'checkbox':
         return <FormCheckbox label={field.label} description={field.label} required={field.required} />;
+      // Adicionar o caso dropdown
+      case 'dropdown':
+        return <FormDropdown label={field.label} options={field.options} required={field.required} />;
       default:
         return null;
     }
   };
+
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 p-4">

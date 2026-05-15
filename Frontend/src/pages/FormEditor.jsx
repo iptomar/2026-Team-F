@@ -11,7 +11,8 @@ import React, { useState } from 'react';
 import {
   FormLabel,
   FormRadioGroup,
-  FormCheckbox
+  FormCheckbox,
+  FormDropdown
 } from '../components/DynamicElements';
 
 // ======================================================
@@ -30,8 +31,8 @@ const FIELD_TYPES = {
   LABEL: 'label',
   RADIO: 'radio',
   CHECKBOX: 'checkbox',
+  DROPDOWN: 'dropdown', 
 };
-
 
 // ======================================================
 // COMPONENTE PRINCIPAL
@@ -59,44 +60,15 @@ const FormEditor = () => {
   // RENDERIZAÇÃO DOS CAMPOS
   // ======================================================
   const renderField = (field) => {
-
     switch (field.type) {
-
-      // =========================
-      // LABEL
-      // =========================
       case FIELD_TYPES.LABEL:
-
-        return (
-          <FormLabel value={field.label} />
-        );
-
-      // =========================
-      // RADIO
-      // =========================
+        return <FormLabel value={field.label} />;
       case FIELD_TYPES.RADIO:
-
-        return (
-          <FormRadioGroup
-            label={field.label}
-            options={field.options}
-            required={field.required}
-          />
-        );
-
-      // =========================
-      // CHECKBOX
-      // =========================
+        return <FormRadioGroup label={field.label} options={field.options} required={field.required} />;
       case FIELD_TYPES.CHECKBOX:
-
-        return (
-          <FormCheckbox
-            label={field.label}
-            description={field.label}
-            required={field.required}
-          />
-        );
-
+        return <FormCheckbox label={field.label} description={field.label} required={field.required} />;
+      case FIELD_TYPES.DROPDOWN: // <-- Novo
+        return <FormDropdown label={field.label} options={field.options} required={field.required} />;
       default:
         return null;
     }
@@ -226,35 +198,33 @@ const FormEditor = () => {
   // ======================================================
   // ADICIONAR NOVO CAMPO
   // ======================================================
+ // Dentro do FormEditor, atualiza o renderField:
+  const renderField = (field) => {
+    switch (field.type) {
+      case FIELD_TYPES.LABEL:
+        return <FormLabel value={field.label} />;
+      case FIELD_TYPES.RADIO:
+        return <FormRadioGroup label={field.label} options={field.options} required={field.required} />;
+      case FIELD_TYPES.CHECKBOX:
+        return <FormCheckbox label={field.label} description={field.label} required={field.required} />;
+      case FIELD_TYPES.DROPDOWN: // <-- Novo
+        return <FormDropdown label={field.label} options={field.options} required={field.required} />;
+      default:
+        return null;
+    }
+  };
+
+  // Atualiza o addField para suportar opções no dropdown:
   const addField = (type) => {
-
     const newField = {
-
-      id: crypto.randomUUID(),
-
+      id: crypto.randomUUID(), 
       type: type,
-
       label: `Novo campo de ${type}`,
-
-      required: false,
-
-      options:
-        type === FIELD_TYPES.RADIO
-          ? ['Opção 1']
-          : [],
-
-      order: fields.length + 1,
-
+      required: false, 
+      options: (type === FIELD_TYPES.RADIO || type === FIELD_TYPES.DROPDOWN) ? ['Opção 1'] : [], // <-- Atualizado
+      order: fields.length + 1, 
     };
-
-    setFields(prevFields => [
-
-      ...prevFields,
-
-      newField
-
-    ]);
-
+    setFields(prevFields => [...prevFields, newField]);
   };
 
 

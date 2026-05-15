@@ -61,3 +61,24 @@ export const FormCheckbox = ({ label, description, required, error }) => (
     </div>
   </FieldWrapper>
 );
+
+// 4. Componente de Dropdown (Select)
+export const FormDropdown = ({ label, options = [], required, error }) => (
+  <FieldWrapper label={label} required={required} error={error}>
+    <select
+      className="w-full p-3 border border-gray-300 rounded-md bg-white text-gray-700 hover:bg-gray-50 transition cursor-pointer focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+      disabled
+    >
+      <option value="">Selecione uma opção...</option>
+      {options.length > 0 ? (
+        options.map((opt, index) => (
+          <option key={index} value={opt}>
+            {opt}
+          </option>
+        ))
+      ) : (
+        <option value="" disabled>Nenhuma opção configurada</option>
+      )}
+    </select>
+  </FieldWrapper>
+);
