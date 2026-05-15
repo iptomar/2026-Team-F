@@ -70,8 +70,7 @@ const FieldCard = ({
           </div>
 
           {/* OPÇÕES RADIO */}
-          {editData.type === FIELD_TYPES.RADIO && (
-
+          {(editData.type === FIELD_TYPES.RADIO || editData.type === FIELD_TYPES.DROPDOWN) && (
             <div>
 
               <label className="block text-sm font-semibold text-gray-700 mb-2">

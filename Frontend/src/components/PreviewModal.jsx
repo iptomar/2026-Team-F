@@ -13,7 +13,6 @@ const PreviewModal = ({ isOpen, onClose, schema }) => {
         return <FormRadioGroup label={field.label} options={field.options} required={field.required} />;
       case 'checkbox':
         return <FormCheckbox label={field.label} description={field.label} required={field.required} />;
-      // Adicionar o caso dropdown
       case 'dropdown':
         return <FormDropdown label={field.label} options={field.options} required={field.required} />;
       default:
