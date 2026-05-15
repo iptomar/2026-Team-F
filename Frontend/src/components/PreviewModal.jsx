@@ -10,11 +10,11 @@ const PreviewModal = ({ isOpen, onClose, schema }) => {
       case 'label':
         return <FormLabel value={field.label} />;
       case 'radio':
-        return <FormRadioGroup label={field.label} options={field.options} required={field.required} />;
+        return <FormRadioGroup label={field.label} options={field.options} required={field.required} isPreview={true} />;
       case 'checkbox':
-        return <FormCheckbox label={field.label} description={field.label} required={field.required} />;
+        return <FormCheckbox label={field.label} description={field.label} required={field.required} isPreview={true} />;
       case 'dropdown':
-        return <FormDropdown label={field.label} options={field.options} required={field.required} />;
+        return <FormDropdown label={field.label} options={field.options} required={field.required} isPreview={true} />;
       default:
         return null;
     }
