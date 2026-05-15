@@ -3,6 +3,9 @@ import React, { useState } from 'react';
 import { FormLabel, FormRadioGroup, FormCheckbox } from '../components/DynamicElements';
 import PreviewModal from '../components/PreviewModal';
 
+import Toolbar from "../components/Toolbar";
+
+
 // NOTA: Se o teu colega criou o FormEditorHeader e o quiseres usar, 
 // podes descomentar a linha abaixo e usá-lo dentro do return!
 // import FormEditorHeader from '../components/FormEditorHeader';
@@ -92,12 +95,17 @@ const FormEditor = () => {
         </button>
       </div>
       
-      {/* Botões de Adicionar */}
-      <div className="mb-8 flex gap-3 flex-wrap">
-        <button onClick={() => addField(FIELD_TYPES.LABEL)} className="px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold">+ Label</button>
-        <button onClick={() => addField(FIELD_TYPES.RADIO)} className="px-6 py-2 bg-green-600 text-white rounded-lg font-semibold">+ Radio</button>
-        <button onClick={() => addField(FIELD_TYPES.CHECKBOX)} className="px-6 py-2 bg-purple-600 text-white rounded-lg font-semibold">+ Checkbox</button>
-      </div>
+     
+     <Toolbar
+  addField={addField}
+  FIELD_TYPES={FIELD_TYPES}
+  mockMode={isPreviewOpen}
+  setMockMode={setIsPreviewOpen}
+  handleSubmit={() => console.log("Submeter")}
+ />
+
+
+
       
       {/* Zona de Renderização Única (Sem código repetido!) */}
       <div className="border-2 border-dashed border-gray-200 rounded-lg p-6 mb-8 min-h-[100px]">
