@@ -1,174 +1,351 @@
-// Frontend/src/pages/FormEditor.jsx
+// ======================================================
+// FRONTEND/src/pages/FormEditor.jsx
+// Página principal do editor de formulários
+// ======================================================
+
 import React, { useState } from 'react';
-import { FormLabel, FormRadioGroup, FormCheckbox } from '../components/DynamicElements';
+
+// ======================================================
+// COMPONENTES DINÂMICOS
+// ======================================================
+import {
+  FormLabel,
+  FormRadioGroup,
+  FormCheckbox
+} from '../components/DynamicElements';
+
+// ======================================================
+// COMPONENTES DO SISTEMA
+// ======================================================
 import PreviewModal from '../components/PreviewModal';
-
 import Toolbar from "../components/Toolbar";
+import FieldCard from "../components/FieldCard";
+import Sidebar from "../components/Sidebar";
 
 
-// NOTA: Se o teu colega criou o FormEditorHeader e o quiseres usar, 
-// podes descomentar a linha abaixo e usá-lo dentro do return!
-// import FormEditorHeader from '../components/FormEditorHeader';
-
+// ======================================================
+// TIPOS DE CAMPOS DISPONÍVEIS
+// ======================================================
 const FIELD_TYPES = {
   LABEL: 'label',
   RADIO: 'radio',
   CHECKBOX: 'checkbox',
 };
 
+
+// ======================================================
+// COMPONENTE PRINCIPAL
+// ======================================================
 const FormEditor = () => {
+
+  // ======================================================
+  // ESTADOS
+  // ======================================================
+
+  // Lista de campos do formulário
   const [fields, setFields] = useState([]);
+
+  // Campo atualmente em edição
   const [editingId, setEditingId] = useState(null);
+
+  // Dados temporários da edição
   const [editData, setEditData] = useState({});
+
+  // Estado da janela Preview
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
+
+  // ======================================================
+  // RENDERIZAÇÃO DOS CAMPOS
+  // ======================================================
   const renderField = (field) => {
+
     switch (field.type) {
+
+      // =========================
+      // LABEL
+      // =========================
       case FIELD_TYPES.LABEL:
-        return <FormLabel value={field.label} />;
+
+        return (
+          <FormLabel value={field.label} />
+        );
+
+      // =========================
+      // RADIO
+      // =========================
       case FIELD_TYPES.RADIO:
-        return <FormRadioGroup label={field.label} options={field.options} required={field.required} />;
+
+        return (
+          <FormRadioGroup
+            label={field.label}
+            options={field.options}
+            required={field.required}
+          />
+        );
+
+      // =========================
+      // CHECKBOX
+      // =========================
       case FIELD_TYPES.CHECKBOX:
-        return <FormCheckbox label={field.label} description={field.label} required={field.required} />;
+
+        return (
+          <FormCheckbox
+            label={field.label}
+            description={field.label}
+            required={field.required}
+          />
+        );
+
       default:
         return null;
     }
   };
 
+
+  // ======================================================
+  // REMOVER CAMPO
+  // ======================================================
   const deleteField = (id) => {
-    setFields(prevFields => prevFields.filter(field => field.id !== id));
+
+    setFields(prevFields =>
+      prevFields.filter(field => field.id !== id)
+    );
+
   };
 
+
+  // ======================================================
+  // INICIAR EDIÇÃO
+  // ======================================================
   const startEditing = (field) => {
+
     setEditingId(field.id);
-    setEditData({ ...field });
+
+    setEditData({
+      ...field
+    });
+
   };
 
+
+  // ======================================================
+  // GUARDAR ALTERAÇÕES
+  // ======================================================
   const saveField = (id) => {
-    setFields(prevFields => prevFields.map(field => field.id === id ? editData : field));
+
+    setFields(prevFields =>
+
+      prevFields.map(field =>
+
+        field.id === id
+          ? editData
+          : field
+
+      )
+
+    );
+
     setEditingId(null);
+
   };
 
+
+  // ======================================================
+  // CANCELAR EDIÇÃO
+  // ======================================================
   const cancelEditing = () => {
+
     setEditingId(null);
+
     setEditData({});
+
   };
 
+
+  // ======================================================
+  // ADICIONAR OPÇÃO RADIO
+  // ======================================================
   const addOption = () => {
+
     setEditData(prev => ({
+
       ...prev,
-      options: [...(prev.options || []), `Opção ${(prev.options?.length || 0) + 1}`]
+
+      options: [
+
+        ...(prev.options || []),
+
+        `Opção ${(prev.options?.length || 0) + 1}`
+
+      ]
+
     }));
+
   };
 
+
+  // ======================================================
+  // REMOVER OPÇÃO RADIO
+  // ======================================================
   const removeOption = (index) => {
-    setEditData(prev => ({ ...prev, options: prev.options.filter((_, i) => i !== index) }));
+
+    setEditData(prev => ({
+
+      ...prev,
+
+      options: prev.options.filter((_, i) => i !== index)
+
+    }));
+
   };
 
+
+  // ======================================================
+  // ATUALIZAR OPÇÃO RADIO
+  // ======================================================
   const updateOption = (index, value) => {
-    setEditData(prev => ({ ...prev, options: prev.options.map((opt, i) => i === index ? value : opt) }));
+
+    setEditData(prev => ({
+
+      ...prev,
+
+      options: prev.options.map((opt, i) =>
+
+        i === index
+          ? value
+          : opt
+
+      )
+
+    }));
+
   };
 
+
+  // ======================================================
+  // ADICIONAR NOVO CAMPO
+  // ======================================================
   const addField = (type) => {
+
     const newField = {
-      id: crypto.randomUUID(), 
+
+      id: crypto.randomUUID(),
+
       type: type,
+
       label: `Novo campo de ${type}`,
-      required: false, 
-      options: type === FIELD_TYPES.RADIO ? ['Opção 1'] : [],
-      order: fields.length + 1, 
+
+      required: false,
+
+      options:
+        type === FIELD_TYPES.RADIO
+          ? ['Opção 1']
+          : [],
+
+      order: fields.length + 1,
+
     };
-    setFields(prevFields => [...prevFields, newField]);
+
+    setFields(prevFields => [
+
+      ...prevFields,
+
+      newField
+
+    ]);
+
   };
-  
+
+
+  // ======================================================
+  // RENDER PRINCIPAL
+  // ======================================================
   return (
-    <div className="p-8 max-w-4xl mx-auto">
-      
-      {/* Cabeçalho e Botão de Preview */}
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Editor de Formulário Dinâmico</h1>
-        <button 
-          onClick={() => setIsPreviewOpen(true)}
-          className="px-5 py-2 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition-all flex items-center gap-2"
-        >
-          👁️ Pré-visualizar
-        </button>
-      </div>
-      
-     
-     <Toolbar
-  addField={addField}
-  FIELD_TYPES={FIELD_TYPES}
-  mockMode={isPreviewOpen}
-  setMockMode={setIsPreviewOpen}
-  handleSubmit={() => console.log("Submeter")}
- />
 
+  <div className="flex bg-gray-100 min-h-screen">
 
+    {/* SIDEBAR */}
+    <Sidebar
+      addField={addField}
+      FIELD_TYPES={FIELD_TYPES}
+    />
 
-      
-      {/* Zona de Renderização Única (Sem código repetido!) */}
-      <div className="border-2 border-dashed border-gray-200 rounded-lg p-6 mb-8 min-h-[100px]">
+    {/* CONTEÚDO */}
+    <div className="flex-1 p-10">
+
+      {/* TÍTULO */}
+      <h1 className="text-4xl font-bold text-gray-800 mb-6">
+        Editor de Formulário
+      </h1>
+
+      {/* TOOLBAR */}
+      <Toolbar
+        addField={addField}
+        FIELD_TYPES={FIELD_TYPES}
+        mockMode={isPreviewOpen}
+        setMockMode={setIsPreviewOpen}
+        handleSubmit={() => console.log("Submeter")}
+      />
+
+      {/* CANVAS */}
+      <div className="border-2 border-dashed border-gray-300 bg-white rounded-2xl p-6 min-h-[400px] shadow-sm">
+
         {fields.length === 0 ? (
-          <p className="text-gray-400 text-center">Selecione um componente para começar.</p>
+
+          <p className="text-gray-400 text-center mt-10">
+            Adicione componentes usando a Sidebar.
+          </p>
+
         ) : (
+
           <div className="space-y-4">
+
             {fields.map((field) => (
-              <div key={field.id} className="p-4 bg-white border border-gray-300 rounded-lg">
-                {editingId === field.id ? (
-                  // --- MODO DE EDIÇÃO ---
-                  <div className="space-y-4">
-                    <input type="text" value={editData.label} onChange={(e) => setEditData({ ...editData, label: e.target.value })} className="w-full px-3 py-2 border rounded-lg" />
-                    
-                    <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                      <input type="checkbox" checked={editData.required || false} onChange={(e) => setEditData({ ...editData, required: e.target.checked })} className="w-5 h-5 cursor-pointer" />
-                      <label className="text-sm font-semibold text-gray-700">Obrigatório</label>
-                    </div>
 
-                    {editData.type === FIELD_TYPES.RADIO && (
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">Opções:</label>
-                        <div className="space-y-2 mb-3">
-                          {editData.options?.map((opt, index) => (
-                            <div key={index} className="flex gap-2">
-                              <input type="text" value={opt} onChange={(e) => updateOption(index, e.target.value)} className="flex-1 px-3 py-2 border border-gray-300 rounded-lg" />
-                              <button onClick={() => removeOption(index)} className="px-3 py-2 bg-red-500 text-white rounded-lg">Remover</button>
-                            </div>
-                          ))}
-                        </div>
-                        <button onClick={addOption} className="px-4 py-2 bg-green-500 text-white rounded-lg text-sm">+ Adicionar Opção</button>
-                      </div>
-                    )}
+              <FieldCard
+                key={field.id}
+                field={field}
 
-                    <div className="flex gap-2 mt-4">
-                      <button onClick={() => saveField(field.id)} className="px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold">Guardar</button>
-                      <button onClick={cancelEditing} className="px-4 py-2 bg-gray-400 text-white rounded-lg font-semibold">Cancelar</button>
-                    </div>
-                  </div>
-                ) : (
-                  // --- MODO DE VISUALIZAÇÃO ---
-                  <>
-                    <div className="mb-3 flex justify-between items-center">
-                      <span className="text-xs font-semibold text-gray-500 uppercase">{field.type} {field.required && <span className="text-red-500 text-lg">*</span>}</span>
-                      <div className="flex gap-2">
-                        <button onClick={() => startEditing(field)} className="text-blue-600 text-sm font-semibold">Editar</button>
-                        <button onClick={() => deleteField(field.id)} className="text-red-600 text-sm font-semibold">Remover</button>
-                      </div>
-                    </div>
-                    {renderField(field)}
-                  </>
-                )}
-              </div>
+                editingId={editingId}
+                editData={editData}
+                setEditData={setEditData}
+
+                saveField={saveField}
+                cancelEditing={cancelEditing}
+
+                startEditing={startEditing}
+                deleteField={deleteField}
+
+                FIELD_TYPES={FIELD_TYPES}
+
+                updateOption={updateOption}
+                removeOption={removeOption}
+                addOption={addOption}
+
+                renderField={renderField}
+              />
+
             ))}
+
           </div>
+
         )}
+
       </div>
 
-      {/* Janela de Preview Oculta no final */}
-      <PreviewModal isOpen={isPreviewOpen} onClose={() => setIsPreviewOpen(false)} schema={fields} />
-      
+      {/* PREVIEW */}
+      <PreviewModal
+        isOpen={isPreviewOpen}
+        onClose={() => setIsPreviewOpen(false)}
+        schema={fields}
+      />
+
     </div>
-  );
+
+  </div>
+
+);
 };
 
 export default FormEditor;
