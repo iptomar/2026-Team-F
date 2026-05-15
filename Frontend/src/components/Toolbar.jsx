@@ -36,6 +36,14 @@ const Toolbar = ({
         + Checkbox
       </button>
 
+      {/* Botão Dropdown */}
+      <button
+      onClick={() => addField(FIELD_TYPES.DROPDOWN)}
+      className="bg-orange-50 hover:bg-orange-100 border border-orange-200 text-orange-700 font-semibold px-4 py-2 rounded-lg transition-all"
+      >
+       + Dropdown
+      </button>
+
       {/* Botão Preview */}
       <button
         onClick={() => setMockMode(!mockMode)}
