@@ -85,7 +85,11 @@ const FormEditor = ({ formId }) => {
           setCurrentFormId(formData.id);
           setFormName(formData.name);
           setFormDescription(formData.description || '');
-          setFields(formData.fields || []);
+          
+          // Garante que os campos vindos do banco respeitam a ordenação guardada
+          const camposOrdenados = formData.fields || [];
+          camposOrdenados.sort((a, b) => (a.order || 0) - (b.order || 0));
+          setFields(camposOrdenados);
         } catch (error) {
           console.error('Erro ao carregar formulário:', error);
           alert(`Erro ao carregar rascunho: ${error.message}`);
@@ -99,14 +103,60 @@ const FormEditor = ({ formId }) => {
   }, [formId]);
 
   // ======================================================
+  // REORDENAR CAMPO (HISTÓRIA #10)
+  // ======================================================
+  const moverCampo = async (index, direcao) => {
+    const novosCampos = [...fields];
+    const novoIndex = direcao === 'cima' ? index - 1 : index + 1;
+
+    // Impede movimentos fora do limite do array
+    if (novoIndex < 0 || novoIndex >= novosCampos.length) return;
+
+    // Troca os elementos de posição
+    const temp = novosCampos[index];
+    novosCampos[index] = novosCampos[novoIndex];
+    novosCampos[novoIndex] = temp;
+
+    // Reatribui o valor correto de 'order' baseado na nova sequência do array
+    const camposMapeados = novosCampos.map((campo, idx) => ({
+      ...campo,
+      order: idx + 1,
+    }));
+
+    // Atualiza o estado na Interface imediatamente
+    setFields(camposMapeados);
+
+    // Se o formulário já existir na BD, sincroniza a nova ordem automaticamente
+    if (currentFormId) {
+      try {
+        const payload = {
+          name: formName,
+          description: formDescription,
+          fields: camposMapeados
+        };
+
+        await fetch(`http://localhost:3000/form-templates/${currentFormId}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+      } catch (error) {
+        console.error('Erro ao sincronizar ordenação com o servidor:', error);
+      }
+    }
+  };
+
+  // ======================================================
   // REMOVER CAMPO
   // ======================================================
   const deleteField = (id) => {
-
-    setFields(prevFields =>
-      prevFields.filter(field => field.id !== id)
-    );
-
+    setFields(prevFields => {
+      const filtrados = prevFields.filter(field => field.id !== id);
+      // Reajusta a ordem consecutiva após a remoção
+      return filtrados.map((field, idx) => ({ ...field, order: idx + 1 }));
+    });
   };
 
 
@@ -221,7 +271,6 @@ const FormEditor = ({ formId }) => {
   // ======================================================
   // ADICIONAR NOVO CAMPO
   // ======================================================
- // Dentro do FormEditor, atualiza o renderField:
   const renderField = (field) => {
     switch (field.type) {
       case FIELD_TYPES.LABEL:
@@ -230,21 +279,20 @@ const FormEditor = ({ formId }) => {
         return <FormRadioGroup label={field.label} options={field.options} required={field.required} />;
       case FIELD_TYPES.CHECKBOX:
         return <FormCheckbox label={field.label} description={field.label} required={field.required} />;
-      case FIELD_TYPES.DROPDOWN: // <-- Novo
+      case FIELD_TYPES.DROPDOWN: 
         return <FormDropdown label={field.label} options={field.options} required={field.required} />;
       default:
         return null;
     }
   };
 
-  // Atualiza o addField para suportar opções no dropdown:
   const addField = (type) => {
     const newField = {
       id: crypto.randomUUID(), 
       type: type,
       label: `Novo campo de ${type}`,
       required: false, 
-      options: (type === FIELD_TYPES.RADIO || type === FIELD_TYPES.DROPDOWN) ? ['Opção 1'] : [], // <-- Atualizado
+      options: (type === FIELD_TYPES.RADIO || type === FIELD_TYPES.DROPDOWN) ? ['Opção 1'] : [], 
       order: fields.length + 1, 
     };
     setFields(prevFields => [...prevFields, newField]);
@@ -286,7 +334,6 @@ const FormEditor = ({ formId }) => {
 
       const data = await response.json();
       
-      // Se é novo, guardar o ID retornado
       if (!currentFormId) {
         setCurrentFormId(data.id);
       }
@@ -389,11 +436,14 @@ const FormEditor = ({ formId }) => {
 
           <div className="space-y-4">
 
-            {fields.map((field) => (
+            {fields.map((field, index) => (
 
               <FieldCard
                 key={field.id}
                 field={field}
+                index={index}
+                totalFields={fields.length}
+                moverCampo={moverCampo}
 
                 editingId={editingId}
                 editData={editData}
