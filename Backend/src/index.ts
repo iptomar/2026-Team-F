@@ -3,6 +3,7 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import { AppDataSource } from "./config/database";
+import authRoutes from "./routes/authRoutes";
 import formTemplateRoutes from "./routes/formTemplateRoutes";
 import formSubmissionRoutes from "./routes/formSubmissionRoutes";
 import workflowRoutes from "./routes/workflowRoutes";
@@ -21,6 +22,7 @@ app.get("/", (_req, res) => {
   });
 });
 
+app.use("/auth", authRoutes);
 app.use("/form-templates", formTemplateRoutes);
 app.use("/form-submissions", formSubmissionRoutes);
 app.use("/workflows", workflowRoutes);
