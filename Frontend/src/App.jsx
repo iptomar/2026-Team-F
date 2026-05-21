@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import AuthPage from './pages/AuthPage';
 import HomePage from './pages/HomePage';
 import FormEditor from './pages/FormEditor';
+import SubmissionsPage from './pages/SubmissionsPage'; 
 import {
   clearAuthSession,
   getAuthenticatedUser,
@@ -86,6 +87,12 @@ function App() {
     setSelectedFormId(null);
   };
 
+  // <-- 2. Nova função para abrir a página de pedidos
+  const handleViewSubmissions = () => {
+    setCurrentPage('submissions');
+    setSelectedFormId(null);
+  };
+
   if (isCheckingSession) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -117,6 +124,17 @@ function App() {
         </div>
 
         <div className="flex items-center gap-3">
+          
+          {/* <-- 3. Novo botão para ir para os pedidos */}
+          {currentPage !== 'submissions' && (
+            <button
+              onClick={handleViewSubmissions}
+              className="px-4 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-lg transition font-medium"
+            >
+              Ver Pedidos
+            </button>
+          )}
+
           {currentPage !== 'home' && (
             <button
               onClick={handleGoHome}
@@ -150,6 +168,11 @@ function App() {
           authToken={authToken}
         />
       )}
+
+      {currentPage === 'submissions' && (
+        <SubmissionsPage />
+      )}
+      
     </div>
   );
 }

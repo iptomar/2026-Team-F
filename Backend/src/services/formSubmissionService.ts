@@ -58,4 +58,20 @@ export class FormSubmissionService {
       order: { submitted_at: "DESC" },
     });
   }
+  async updateStatus(id: string, status: string): Promise<FormSubmission | null> {
+    // 1. Procura o pedido na base de dados pelo ID
+    const submission = await this.submissionRepository.findOneBy({ id });
+
+    // 2. Se não existir, devolve nulo
+    if (!submission) {
+      return null;
+    }
+
+    // 3. Atualiza a propriedade 'status' com o novo estado que veio do Frontend
+    submission.status = status as FormSubmissionStatus;
+
+    // 4. Guarda as alterações na base de dados e devolve o pedido atualizado
+    return this.submissionRepository.save(submission);
+  }
+
 }
