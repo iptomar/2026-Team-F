@@ -248,4 +248,22 @@ export class FormTemplateController {
       res.status(500).json({ error: "Erro interno ao associar workflow." });
     }
   }
+
+  async delete(req: Request<{ id: string }>, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+
+      const deleted = await service.delete(id);
+
+      if (!deleted) {
+        res.status(404).json({ error: "Template não encontrado." });
+        return;
+      }
+
+      res.status(204).send();
+    } catch (error) {
+      console.error("Erro ao remover template:", error);
+      res.status(500).json({ error: "Erro interno ao remover template." });
+    }
+  }
 }

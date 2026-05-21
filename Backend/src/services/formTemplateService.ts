@@ -102,4 +102,9 @@ export class FormTemplateService {
     template.workflow_id = workflowId;
     return this.repository.save(template);
   }
+
+  async delete(id: string): Promise<boolean> {
+    const result = await this.repository.delete(id);
+    return typeof result.affected === "number" && result.affected > 0;
+  }
 }

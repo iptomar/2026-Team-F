@@ -31,13 +31,13 @@ const FIELD_TYPES = {
   LABEL: 'label',
   RADIO: 'radio',
   CHECKBOX: 'checkbox',
-  DROPDOWN: 'dropdown', 
+  DROPDOWN: 'dropdown',
 };
 
 // ======================================================
 // COMPONENTE PRINCIPAL
 // ======================================================
-const FormEditor = ({ formId }) => {
+const FormEditor = ({ formId, onGoHome }) => {
 
   // ======================================================
   // ESTADOS
@@ -102,11 +102,9 @@ const FormEditor = ({ formId }) => {
   // REMOVER CAMPO
   // ======================================================
   const deleteField = (id) => {
-
     setFields(prevFields =>
       prevFields.filter(field => field.id !== id)
     );
-
   };
 
 
@@ -114,13 +112,8 @@ const FormEditor = ({ formId }) => {
   // INICIAR EDIÇÃO
   // ======================================================
   const startEditing = (field) => {
-
     setEditingId(field.id);
-
-    setEditData({
-      ...field
-    });
-
+    setEditData({ ...field });
   };
 
 
@@ -128,21 +121,12 @@ const FormEditor = ({ formId }) => {
   // GUARDAR ALTERAÇÕES
   // ======================================================
   const saveField = (id) => {
-
     setFields(prevFields =>
-
       prevFields.map(field =>
-
-        field.id === id
-          ? editData
-          : field
-
+        field.id === id ? editData : field
       )
-
     );
-
     setEditingId(null);
-
   };
 
 
@@ -150,11 +134,8 @@ const FormEditor = ({ formId }) => {
   // CANCELAR EDIÇÃO
   // ======================================================
   const cancelEditing = () => {
-
     setEditingId(null);
-
     setEditData({});
-
   };
 
 
@@ -162,21 +143,13 @@ const FormEditor = ({ formId }) => {
   // ADICIONAR OPÇÃO RADIO
   // ======================================================
   const addOption = () => {
-
     setEditData(prev => ({
-
       ...prev,
-
       options: [
-
         ...(prev.options || []),
-
         `Opção ${(prev.options?.length || 0) + 1}`
-
       ]
-
     }));
-
   };
 
 
@@ -184,15 +157,10 @@ const FormEditor = ({ formId }) => {
   // REMOVER OPÇÃO RADIO
   // ======================================================
   const removeOption = (index) => {
-
     setEditData(prev => ({
-
       ...prev,
-
       options: prev.options.filter((_, i) => i !== index)
-
     }));
-
   };
 
 
@@ -200,28 +168,18 @@ const FormEditor = ({ formId }) => {
   // ATUALIZAR OPÇÃO RADIO
   // ======================================================
   const updateOption = (index, value) => {
-
     setEditData(prev => ({
-
       ...prev,
-
       options: prev.options.map((opt, i) =>
-
-        i === index
-          ? value
-          : opt
-
+        i === index ? value : opt
       )
-
     }));
-
   };
 
 
   // ======================================================
-  // ADICIONAR NOVO CAMPO
+  // RENDERIZAR CAMPO
   // ======================================================
- // Dentro do FormEditor, atualiza o renderField:
   const renderField = (field) => {
     switch (field.type) {
       case FIELD_TYPES.LABEL:
@@ -230,22 +188,24 @@ const FormEditor = ({ formId }) => {
         return <FormRadioGroup label={field.label} options={field.options} required={field.required} />;
       case FIELD_TYPES.CHECKBOX:
         return <FormCheckbox label={field.label} description={field.label} required={field.required} />;
-      case FIELD_TYPES.DROPDOWN: // <-- Novo
+      case FIELD_TYPES.DROPDOWN:
         return <FormDropdown label={field.label} options={field.options} required={field.required} />;
       default:
         return null;
     }
   };
 
-  // Atualiza o addField para suportar opções no dropdown:
+  // ======================================================
+  // ADICIONAR NOVO CAMPO
+  // ======================================================
   const addField = (type) => {
     const newField = {
-      id: crypto.randomUUID(), 
+      id: crypto.randomUUID(),
       type: type,
       label: `Novo campo de ${type}`,
-      required: false, 
-      options: (type === FIELD_TYPES.RADIO || type === FIELD_TYPES.DROPDOWN) ? ['Opção 1'] : [], // <-- Atualizado
-      order: fields.length + 1, 
+      required: false,
+      options: (type === FIELD_TYPES.RADIO || type === FIELD_TYPES.DROPDOWN) ? ['Opção 1'] : [],
+      order: fields.length + 1,
     };
     setFields(prevFields => [...prevFields, newField]);
   };
@@ -285,7 +245,7 @@ const FormEditor = ({ formId }) => {
       }
 
       const data = await response.json();
-      
+
       // Se é novo, guardar o ID retornado
       if (!currentFormId) {
         setCurrentFormId(data.id);
@@ -317,6 +277,38 @@ const FormEditor = ({ formId }) => {
 
 
   // ======================================================
+  // APAGAR FORMULÁRIO
+  // ======================================================
+  const handleDeleteForm = async () => {
+    if (currentFormId) {
+      if (window.confirm('Apagar este formulário permanentemente?')) {
+        try {
+          const response = await fetch(`http://localhost:3000/form-templates/${currentFormId}`, {
+            method: 'DELETE',
+          });
+
+          if (!response.ok) {
+            throw new Error(`Erro ao apagar formulário: ${response.statusText}`);
+          }
+
+          setCurrentFormId(null);
+          setFormName('Meu Formulário');
+          setFormDescription('');
+          setFields([]);
+
+          if (onGoHome) {
+            onGoHome();
+          }
+        } catch (error) {
+          console.error('Erro ao apagar formulário:', error);
+          alert(`Erro ao apagar formulário: ${error.message}`);
+        }
+      }
+    }
+  };
+
+
+  // ======================================================
   // RENDER PRINCIPAL
   // ======================================================
   if (isLoading) {
@@ -332,108 +324,171 @@ const FormEditor = ({ formId }) => {
 
   return (
 
-  <div className="flex bg-gray-100 min-h-screen">
+    <div className="flex bg-gray-100 min-h-screen">
 
-    {/* SIDEBAR */}
-    <Sidebar
-      addField={addField}
-      FIELD_TYPES={FIELD_TYPES}
-    />
-
-    {/* CONTEÚDO */}
-    <div className="flex-1 p-10">
-
-      {/* TÍTULO */}
-      <h1 className="text-4xl font-bold text-gray-800 mb-2">
-        Editor de Formulário
-      </h1>
-
-      {/* CAMPO NOME DO FORMULÁRIO */}
-      <input
-        type="text"
-        value={formName}
-        onChange={(e) => setFormName(e.target.value)}
-        placeholder="Nome do formulário"
-        className="mb-4 px-4 py-2 w-full max-w-2xl border border-gray-300 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-      />
-
-      {/* CAMPO DESCRIÇÃO */}
-      <textarea
-        value={formDescription}
-        onChange={(e) => setFormDescription(e.target.value)}
-        placeholder="Descrição do formulário (opcional)"
-        className="mb-6 px-4 py-2 w-full max-w-2xl border border-gray-300 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
-        rows="2"
-      />
-
-      {/* TOOLBAR */}
-      <Toolbar
+      {/* SIDEBAR */}
+      <Sidebar
         addField={addField}
         FIELD_TYPES={FIELD_TYPES}
-        mockMode={isPreviewOpen}
-        setMockMode={setIsPreviewOpen}
-        handleSubmit={handleSubmit}
-        handleSaveDraft={handleSaveDraft}
       />
 
-      {/* CANVAS */}
-      <div className="border-2 border-dashed border-gray-300 bg-white rounded-2xl p-6 min-h-[400px] shadow-sm">
+      {/* CONTEÚDO */}
+      <div className="flex-1 flex flex-col min-h-screen">
 
-        {fields.length === 0 ? (
+        {/* CABEÇALHO GLOBAL FIXO */}
+        <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-200 px-8 py-4 flex justify-between items-center">
 
-          <p className="text-gray-400 text-center mt-10">
-            Adicione componentes usando a Sidebar.
-          </p>
+          {/* Lado esquerdo — voltar + título */}
+          <div className="flex items-center gap-4">
+            {onGoHome && (
+              <button
+                onClick={onGoHome}
+                className="text-gray-400 hover:text-gray-700 transition"
+                title="Voltar à página inicial"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+            )}
+            <div>
+              <h1 className="text-lg font-semibold text-gray-800 leading-tight">
+                {formName || 'Novo Formulário'}
+              </h1>
+              <p className="text-xs text-gray-400">
+                {currentFormId ? 'A editar rascunho' : 'Novo formulário'}
+              </p>
+            </div>
+          </div>
 
-        ) : (
+          {/* Lado direito — ações globais */}
+          <div className="flex gap-3 items-center">
 
-          <div className="space-y-4">
+            {/* Apagar */}
+            {currentFormId && (
+              <button
+                onClick={handleDeleteForm}
+                className="text-red-500 hover:bg-red-50 px-3 py-2 rounded-lg text-sm font-medium transition"
+              >
+                Apagar
+              </button>
+            )}
 
-            {fields.map((field) => (
+            {/* Ver Preview */}
+            <button
+              onClick={() => setIsPreviewOpen(!isPreviewOpen)}
+              className="bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 px-4 py-2 rounded-lg text-sm font-medium transition"
+            >
+              {isPreviewOpen ? 'Fechar Preview' : 'Ver Preview'}
+            </button>
 
-              <FieldCard
-                key={field.id}
-                field={field}
+            {/* Guardar Rascunho */}
+            <button
+              onClick={handleSaveDraft}
+              className="bg-gray-100 text-gray-800 hover:bg-gray-200 px-4 py-2 rounded-lg text-sm font-medium transition"
+            >
+              Guardar Rascunho
+            </button>
 
-                editingId={editingId}
-                editData={editData}
-                setEditData={setEditData}
-
-                saveField={saveField}
-                cancelEditing={cancelEditing}
-
-                startEditing={startEditing}
-                deleteField={deleteField}
-
-                FIELD_TYPES={FIELD_TYPES}
-
-                updateOption={updateOption}
-                removeOption={removeOption}
-                addOption={addOption}
-
-                renderField={renderField}
-              />
-
-            ))}
+            {/* Submeter / Publicar */}
+            <button
+              onClick={handleSubmit}
+              className="bg-blue-600 text-white hover:bg-blue-700 px-5 py-2 rounded-lg text-sm font-semibold shadow-sm transition"
+            >
+              Publicar
+            </button>
 
           </div>
 
-        )}
+        </header>
+
+        {/* ÁREA DE EDIÇÃO */}
+        <div className="flex-1 p-10">
+
+          {/* CAMPO NOME DO FORMULÁRIO */}
+          <input
+            type="text"
+            value={formName}
+            onChange={(e) => setFormName(e.target.value)}
+            placeholder="Nome do formulário"
+            className="mb-4 px-4 py-2 w-full border border-gray-300 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+
+          {/* CAMPO DESCRIÇÃO */}
+          <textarea
+            value={formDescription}
+            onChange={(e) => setFormDescription(e.target.value)}
+            placeholder="Descrição do formulário (opcional)"
+            className="mb-6 px-4 py-2 w-full border border-gray-300 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+            rows="2"
+          />
+
+          {/* TOOLBAR — apenas inserção rápida de campos */}
+          <Toolbar
+            addField={addField}
+            FIELD_TYPES={FIELD_TYPES}
+          />
+
+          {/* CANVAS */}
+          <div className="border-2 border-dashed border-gray-300 bg-white rounded-2xl p-6 min-h-[400px] shadow-sm">
+
+            {fields.length === 0 ? (
+
+              <p className="text-gray-400 text-center mt-10">
+                Adicione componentes usando a Sidebar.
+              </p>
+
+            ) : (
+
+              <div className="space-y-4">
+
+                {fields.map((field) => (
+
+                  <FieldCard
+                    key={field.id}
+                    field={field}
+
+                    editingId={editingId}
+                    editData={editData}
+                    setEditData={setEditData}
+
+                    saveField={saveField}
+                    cancelEditing={cancelEditing}
+
+                    startEditing={startEditing}
+                    deleteField={deleteField}
+
+                    FIELD_TYPES={FIELD_TYPES}
+
+                    updateOption={updateOption}
+                    removeOption={removeOption}
+                    addOption={addOption}
+
+                    renderField={renderField}
+                  />
+
+                ))}
+
+              </div>
+
+            )}
+
+          </div>
+
+          {/* PREVIEW */}
+          <PreviewModal
+            isOpen={isPreviewOpen}
+            onClose={() => setIsPreviewOpen(false)}
+            schema={fields}
+          />
+
+        </div>
 
       </div>
 
-      {/* PREVIEW */}
-      <PreviewModal
-        isOpen={isPreviewOpen}
-        onClose={() => setIsPreviewOpen(false)}
-        schema={fields}
-      />
-
     </div>
 
-  </div>
-
-);
+  );
 };
 
 export default FormEditor;

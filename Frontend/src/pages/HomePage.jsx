@@ -36,6 +36,25 @@ const HomePage = ({ onCreateNew, onSelectDraft, authUser }) => {
     fetchDrafts();
   }, []);
 
+  const handleDelete = async (id) => {
+    if (window.confirm('Tens a certeza que queres apagar este rascunho?')) {
+      try {
+        const response = await fetch(`http://localhost:3000/form-templates/${id}`, {
+          method: 'DELETE',
+        });
+
+        if (!response.ok) {
+          throw new Error(`Erro ao apagar template: ${response.statusText}`);
+        }
+
+        setDrafts((prev) => prev.filter((draft) => draft.id !== id));
+      } catch (err) {
+        console.error('Erro ao apagar rascunho:', err);
+        alert(`Erro ao apagar rascunho: ${err.message}`);
+      }
+    }
+  };
+
   const formatDate = (dateString) => {
     const date = new Date(dateString);
 
@@ -169,12 +188,18 @@ const HomePage = ({ onCreateNew, onSelectDraft, authUser }) => {
                   </div>
                 </div>
 
-                <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
+                <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex gap-2">
                   <button
                     onClick={() => onSelectDraft(draft.id)}
-                    className="w-full px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-semibold text-sm"
+                    className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-semibold text-sm text-center"
                   >
                     Continuar Edição
+                  </button>
+                  <button
+                    onClick={() => handleDelete(draft.id)}
+                    className="px-4 py-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg transition font-semibold text-sm"
+                  >
+                    Apagar
                   </button>
                 </div>
               </div>

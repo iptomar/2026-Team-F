@@ -148,6 +148,7 @@ function App() {
           formId={selectedFormId}
           authUser={authUser}
           authToken={authToken}
+          onGoHome={handleGoHome}
         />
       )}
     </div>
