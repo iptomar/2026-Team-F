@@ -209,6 +209,55 @@ const FormEditor = () => {
 
 
   // ======================================================
+  // SALVAR FORMULÁRIO NO BANCO DE DADOS
+  // ======================================================
+  const saveFormToDatabase = async (status) => {
+    try {
+      const payload = {
+        name: 'Meu Formulário',
+        fields: fields,
+        status: status
+      };
+
+      const response = await fetch('http://localhost:3000/form-templates', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        throw new Error(`Erro ao salvar: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      alert(`Formulário ${status === 'draft' ? 'salvo como rascunho' : 'publicado'} com sucesso!`);
+      console.log('Resposta do servidor:', data);
+    } catch (error) {
+      console.error('Erro ao salvar formulário:', error);
+      alert(`Erro ao salvar: ${error.message}`);
+    }
+  };
+
+
+  // ======================================================
+  // GUARDAR RASCUNHO
+  // ======================================================
+  const handleSaveDraft = () => {
+    saveFormToDatabase('draft');
+  };
+
+
+  // ======================================================
+  // SUBMETER FORMULÁRIO
+  // ======================================================
+  const handleSubmit = () => {
+    saveFormToDatabase('published');
+  };
+
+
+  // ======================================================
   // RENDER PRINCIPAL
   // ======================================================
   return (
@@ -235,7 +284,8 @@ const FormEditor = () => {
         FIELD_TYPES={FIELD_TYPES}
         mockMode={isPreviewOpen}
         setMockMode={setIsPreviewOpen}
-        handleSubmit={() => console.log("Submeter")}
+        handleSubmit={handleSubmit}
+        handleSaveDraft={handleSaveDraft}
       />
 
       {/* CANVAS */}
