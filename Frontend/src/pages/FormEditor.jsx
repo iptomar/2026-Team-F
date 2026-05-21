@@ -267,9 +267,8 @@ const FormEditor = ({ formId }) => {
       let method = 'POST';
       let endpoint = 'http://localhost:3000/form-templates';
 
-      // Se é um formulário existente, usar PUT para atualizar
       if (currentFormId) {
-        method = 'PUT';
+        method = 'PATCH';
         endpoint = `http://localhost:3000/form-templates/${currentFormId}`;
       }
 
