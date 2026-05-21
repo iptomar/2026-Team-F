@@ -53,6 +53,14 @@ const Sidebar = ({ addField, FIELD_TYPES }) => {
           ☑️ Checkbox
         </button>
 
+        {/* DROPDOWN */}
+        <button
+          onClick={() => addField(FIELD_TYPES.DROPDOWN)}
+          className="w-full bg-orange-50 hover:bg-orange-100 border border-orange-200 text-orange-700 font-semibold p-4 rounded-xl transition-all text-left"
+        >
+          🔽 Dropdown
+        </button>
+
       </div>
 
 

@@ -1,5 +1,5 @@
 // Importar módulo do Node para trabalhar com ficheiros (ler/escrever JSON)
-const fs = require('fs');
+//const fs = require('fs');
 
 // importar o Express framework backend
 const express = require('express');
@@ -13,10 +13,14 @@ const db = require('./database');
 // Criar uma aplicação Express
 const app = express();
 
+//função para guardar historico de submissões em JSON (submissions.json)
+const fs = require("fs");
+
 // Permite usar JSON no body das requests
 app.use(express.json());
 
 // Habilitar CORS
+
 app.use(cors());
 
 
@@ -126,12 +130,67 @@ app.get('/', (req, res) => {
     res.send('API a funcionar ');
 });
 
-// ==========================
-// INICIAR SERVIDOR
-// ==========================
-app.listen(3000, () => {
-    console.log('Servidor a correr em http://localhost:3000');
+
+
+
+
+
+//Criar endpoint
+app.post("/status-history", (req, res) => {
+
+  const newHistory = req.body;
+
+  const filePath = "./statusHistory.json";
+
+  let histories = [];
+
+  if (fs.existsSync(filePath)) {
+    const data = fs.readFileSync(filePath);
+    histories = JSON.parse(data);
+  }
+
+  histories.push({
+    ...newHistory,
+    changedAt: new Date().toISOString()
+  });
+
+  fs.writeFileSync(
+    filePath,
+    JSON.stringify(histories, null, 2)
+  );
+
+  res.json({
+    success: true,
+    message: "Histórico guardado"
+  });
+
 });
+
+
+// ==========================
+// CONSULTAR HISTÓRICO
+// ==========================
+app.get("/status-history", (req, res) => {
+
+  const filePath = "./statusHistory.json";
+
+  // Se não existir
+  if (!fs.existsSync(filePath)) {
+    return res.json([]);
+  }
+
+  // Ler ficheiro
+  const data = fs.readFileSync(filePath);
+
+  // Converter JSON
+  const histories = JSON.parse(data);
+
+  // devolver histórico
+  res.json(histories);
+
+});
+
+
 
 
 
@@ -144,11 +203,11 @@ app.listen(3000, () => {
 // ==========================
 app.post('/submit', (req, res) => {
 
-    // Extrair dados enviados no body
+    // Este Json representa uma submissão de formulário, onde formId é o id do formulário submetido e answers é um array de respostas (fieldId e value)
     const { formId, answers } = req.body;
 
     // ==========================
-    // 🔴 VALIDAÇÃO (ANTES DE GUARDAR)
+    //  VALIDAÇÃO (ANTES DE GUARDAR)
     // ==========================
 
     // Verificar se existem respostas
@@ -208,4 +267,11 @@ app.post('/submit', (req, res) => {
     res.json({
         message: 'Submissão guardada no JSON com sucesso'
     });
+});
+
+// ==========================
+// INICIAR SERVIDOR
+// ==========================
+app.listen(3000, () => {
+    console.log('Servidor a correr em http://localhost:3000');
 });

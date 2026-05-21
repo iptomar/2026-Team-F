@@ -9,8 +9,7 @@ import {
   Draggable
 } from '@hello-pangea/dnd';
 
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 // ======================================================
 // COMPONENTES DINÂMICOS
@@ -18,7 +17,8 @@ import React, { useState } from 'react';
 import {
   FormLabel,
   FormRadioGroup,
-  FormCheckbox
+  FormCheckbox,
+  FormDropdown
 } from '../components/DynamicElements';
 
 // ======================================================
@@ -37,17 +37,26 @@ const FIELD_TYPES = {
   LABEL: 'label',
   RADIO: 'radio',
   CHECKBOX: 'checkbox',
+  DROPDOWN: 'dropdown', 
 };
-
 
 // ======================================================
 // COMPONENTE PRINCIPAL
 // ======================================================
-const FormEditor = () => {
+const FormEditor = ({ formId }) => {
 
   // ======================================================
   // ESTADOS
   // ======================================================
+
+  // ID do formulário sendo editado (pode ser null para novo)
+  const [currentFormId, setCurrentFormId] = useState(formId || null);
+
+  // Nome do formulário
+  const [formName, setFormName] = useState('Meu Formulário');
+
+  // Descrição do formulário
+  const [formDescription, setFormDescription] = useState('');
 
   // Lista de campos do formulário
   const [fields, setFields] = useState([]);
@@ -61,6 +70,8 @@ const FormEditor = () => {
   // Estado da janela Preview
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
+  // Estado de carregamento
+  const [isLoading, setIsLoading] = useState(false);
 
 const handleDragEnd = (result) => {
 
@@ -91,52 +102,35 @@ const handleDragEnd = (result) => {
 
 
   // ======================================================
-  // RENDERIZAÇÃO DOS CAMPOS
+  // CARREGAR FORMULÁRIO EXISTENTE
   // ======================================================
-  const renderField = (field) => {
+  useEffect(() => {
+    if (formId) {
+      const loadFormData = async () => {
+        try {
+          setIsLoading(true);
+          const response = await fetch(`http://localhost:3000/form-templates/${formId}`);
 
-    switch (field.type) {
+          if (!response.ok) {
+            throw new Error(`Erro ao carregar formulário: ${response.statusText}`);
+          }
 
-      // =========================
-      // LABEL
-      // =========================
-      case FIELD_TYPES.LABEL:
+          const formData = await response.json();
+          setCurrentFormId(formData.id);
+          setFormName(formData.name);
+          setFormDescription(formData.description || '');
+          setFields(formData.fields || []);
+        } catch (error) {
+          console.error('Erro ao carregar formulário:', error);
+          alert(`Erro ao carregar rascunho: ${error.message}`);
+        } finally {
+          setIsLoading(false);
+        }
+      };
 
-        return (
-          <FormLabel value={field.label} />
-        );
-
-      // =========================
-      // RADIO
-      // =========================
-      case FIELD_TYPES.RADIO:
-
-        return (
-          <FormRadioGroup
-            label={field.label}
-            options={field.options}
-            required={field.required}
-          />
-        );
-
-      // =========================
-      // CHECKBOX
-      // =========================
-      case FIELD_TYPES.CHECKBOX:
-
-        return (
-          <FormCheckbox
-            label={field.label}
-            description={field.label}
-            required={field.required}
-          />
-        );
-
-      default:
-        return null;
+      loadFormData();
     }
-  };
-
+  }, [formId]);
 
   // ======================================================
   // REMOVER CAMPO
@@ -261,41 +255,115 @@ const handleDragEnd = (result) => {
   // ======================================================
   // ADICIONAR NOVO CAMPO
   // ======================================================
+ // Dentro do FormEditor, atualiza o renderField:
+  const renderField = (field) => {
+    switch (field.type) {
+      case FIELD_TYPES.LABEL:
+        return <FormLabel value={field.label} />;
+      case FIELD_TYPES.RADIO:
+        return <FormRadioGroup label={field.label} options={field.options} required={field.required} />;
+      case FIELD_TYPES.CHECKBOX:
+        return <FormCheckbox label={field.label} description={field.label} required={field.required} />;
+      case FIELD_TYPES.DROPDOWN: // <-- Novo
+        return <FormDropdown label={field.label} options={field.options} required={field.required} />;
+      default:
+        return null;
+    }
+  };
+
+  // Atualiza o addField para suportar opções no dropdown:
   const addField = (type) => {
-
     const newField = {
-
-      id: crypto.randomUUID(),
-
+      id: crypto.randomUUID(), 
       type: type,
-
       label: `Novo campo de ${type}`,
-
-      required: false,
-
-      options:
-        type === FIELD_TYPES.RADIO
-          ? ['Opção 1']
-          : [],
-
-      order: fields.length + 1,
-
+      required: false, 
+      options: (type === FIELD_TYPES.RADIO || type === FIELD_TYPES.DROPDOWN) ? ['Opção 1'] : [], // <-- Atualizado
+      order: fields.length + 1, 
     };
+    setFields(prevFields => [...prevFields, newField]);
+  };
 
-    setFields(prevFields => [
 
-      ...prevFields,
+  // ======================================================
+  // SALVAR FORMULÁRIO NO BANCO DE DADOS
+  // ======================================================
+  const saveFormToDatabase = async (status) => {
+    try {
+      const payload = {
+        name: formName,
+        description: formDescription,
+        fields: fields,
+        status: status
+      };
 
-      newField
+      let response;
+      let method = 'POST';
+      let endpoint = 'http://localhost:3000/form-templates';
 
-    ]);
+      if (currentFormId) {
+        method = 'PATCH';
+        endpoint = `http://localhost:3000/form-templates/${currentFormId}`;
+      }
 
+      response = await fetch(endpoint, {
+        method: method,
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        throw new Error(`Erro ao salvar: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      
+      // Se é novo, guardar o ID retornado
+      if (!currentFormId) {
+        setCurrentFormId(data.id);
+      }
+
+      alert(`Formulário ${status === 'draft' ? 'salvo como rascunho' : 'publicado'} com sucesso!`);
+      console.log('Resposta do servidor:', data);
+    } catch (error) {
+      console.error('Erro ao salvar formulário:', error);
+      alert(`Erro ao salvar: ${error.message}`);
+    }
+  };
+
+
+  // ======================================================
+  // GUARDAR RASCUNHO
+  // ======================================================
+  const handleSaveDraft = () => {
+    saveFormToDatabase('draft');
+  };
+
+
+  // ======================================================
+  // SUBMETER FORMULÁRIO
+  // ======================================================
+  const handleSubmit = () => {
+    saveFormToDatabase('published');
   };
 
 
   // ======================================================
   // RENDER PRINCIPAL
   // ======================================================
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-100">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+          <p className="text-gray-600 mt-4">A carregar formulário...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
 
   <div className="flex bg-gray-100 min-h-screen">
@@ -310,9 +378,27 @@ const handleDragEnd = (result) => {
     <div className="flex-1 p-10">
 
       {/* TÍTULO */}
-      <h1 className="text-4xl font-bold text-gray-800 mb-6">
+      <h1 className="text-4xl font-bold text-gray-800 mb-2">
         Editor de Formulário
       </h1>
+
+      {/* CAMPO NOME DO FORMULÁRIO */}
+      <input
+        type="text"
+        value={formName}
+        onChange={(e) => setFormName(e.target.value)}
+        placeholder="Nome do formulário"
+        className="mb-4 px-4 py-2 w-full max-w-2xl border border-gray-300 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+      />
+
+      {/* CAMPO DESCRIÇÃO */}
+      <textarea
+        value={formDescription}
+        onChange={(e) => setFormDescription(e.target.value)}
+        placeholder="Descrição do formulário (opcional)"
+        className="mb-6 px-4 py-2 w-full max-w-2xl border border-gray-300 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+        rows="2"
+      />
 
       {/* TOOLBAR */}
       <Toolbar
@@ -320,7 +406,8 @@ const handleDragEnd = (result) => {
         FIELD_TYPES={FIELD_TYPES}
         mockMode={isPreviewOpen}
         setMockMode={setIsPreviewOpen}
-        handleSubmit={() => console.log("Submeter")}
+        handleSubmit={handleSubmit}
+        handleSaveDraft={handleSaveDraft}
       />
 
       {/* CANVAS */}

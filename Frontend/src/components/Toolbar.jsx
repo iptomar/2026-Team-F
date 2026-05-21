@@ -5,7 +5,8 @@ const Toolbar = ({
   FIELD_TYPES,
   mockMode,
   setMockMode,
-  handleSubmit
+  handleSubmit,
+  handleSaveDraft
 }) => {
 
   return (
@@ -36,12 +37,28 @@ const Toolbar = ({
         + Checkbox
       </button>
 
+      {/* Botão Dropdown */}
+      <button
+      onClick={() => addField(FIELD_TYPES.DROPDOWN)}
+      className="bg-orange-50 hover:bg-orange-100 border border-orange-200 text-orange-700 font-semibold px-4 py-2 rounded-lg transition-all"
+      >
+       + Dropdown
+      </button>
+
       {/* Botão Preview */}
       <button
         onClick={() => setMockMode(!mockMode)}
         className="px-5 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition"
       >
         {mockMode ? "Fechar Preview" : "Abrir Preview"}
+      </button>
+
+      {/* Botão Guardar Rascunho */}
+      <button
+        onClick={handleSaveDraft}
+        className="px-5 py-2 bg-gray-100 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-200 transition"
+      >
+        Guardar Rascunho
       </button>
 
       {/* Botão Submeter */}

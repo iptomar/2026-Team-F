@@ -22,7 +22,7 @@ export const FormLabel = ({ value, description }) => (
 );
 
 // 2. Componente de Grupo de Radio Buttons (Radio Group)
-export const FormRadioGroup = ({ label, options = [], required, error }) => (
+export const FormRadioGroup = ({ label, options = [], required, error, isPreview }) => (
   <FieldWrapper label={label} required={required} error={error}>
     <div className="space-y-2">
       {options.length > 0 ? (
@@ -32,7 +32,7 @@ export const FormRadioGroup = ({ label, options = [], required, error }) => (
               type="radio" 
               name={label} 
               className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300" 
-              disabled 
+              disabled={!isPreview} 
             />
             <span className="ml-3 text-gray-700">{opt}</span>
           </label>
@@ -45,19 +45,40 @@ export const FormRadioGroup = ({ label, options = [], required, error }) => (
 );
 
 // 3. Componente de Checkbox Individual ou Grupo
-export const FormCheckbox = ({ label, description, required, error }) => (
+export const FormCheckbox = ({ label, description, required, error, isPreview }) => (
   <FieldWrapper label={label} required={required} error={error}>
     <div className="flex items-start p-3 border rounded-md hover:bg-gray-50 transition cursor-pointer">
       <div className="flex items-center h-5">
         <input 
           type="checkbox" 
           className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded" 
-          disabled 
+          disabled={!isPreview}
         />
       </div>
       <div className="ml-3 text-sm">
         <label className="font-medium text-gray-700">{description || "Confirmar seleção"}</label>
       </div>
     </div>
+  </FieldWrapper>
+);
+
+// 4. Componente de Dropdown (Select)
+export const FormDropdown = ({ label, options = [], required, error, isPreview }) => (
+  <FieldWrapper label={label} required={required} error={error}>
+    <select
+      className="w-full p-3 border border-gray-300 rounded-md bg-white text-gray-700 hover:bg-gray-50 transition cursor-pointer focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+      disabled={!isPreview}
+    >
+      <option value="">Selecione uma opção...</option>
+      {options.length > 0 ? (
+        options.map((opt, index) => (
+          <option key={index} value={opt}>
+            {opt}
+          </option>
+        ))
+      ) : (
+        <option value="" disabled>Nenhuma opção configurada</option>
+      )}
+    </select>
   </FieldWrapper>
 );
