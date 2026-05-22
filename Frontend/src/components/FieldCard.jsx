@@ -2,6 +2,9 @@ import React from "react";
 
 const FieldCard = ({
   field,
+  index,
+  totalFields,
+  moverCampo,
   editingId,
   editData,
   setEditData,
@@ -79,10 +82,10 @@ const FieldCard = ({
 
               <div className="space-y-2">
 
-                {editData.options?.map((opt, index) => (
+                {editData.options?.map((opt, indexOpt) => (
 
                   <div
-                    key={index}
+                    key={indexOpt}
                     className="flex gap-2"
                   >
 
@@ -90,13 +93,13 @@ const FieldCard = ({
                       type="text"
                       value={opt}
                       onChange={(e) =>
-                        updateOption(index, e.target.value)
+                        updateOption(indexOpt, e.target.value)
                       }
                       className="flex-1 border border-gray-300 rounded-lg px-4 py-2"
                     />
 
                     <button
-                      onClick={() => removeOption(index)}
+                      onClick={() => removeOption(indexOpt)}
                       className="bg-red-500 text-white px-4 rounded-lg hover:bg-red-600"
                     >
                       X
@@ -146,32 +149,54 @@ const FieldCard = ({
           {/* HEADER */}
           <div className="flex justify-between items-center mb-4">
 
-            <div>
+            <div className="flex items-center gap-3">
+              <div>
+                <p className="text-xs uppercase font-bold text-gray-400">
+                  {field.type} (Posição: {field.order || index + 1})
+                </p>
 
-              <p className="text-xs uppercase font-bold text-gray-400">
-                {field.type}
-              </p>
-
-              {field.required && (
-                <span className="text-red-500 text-sm font-semibold">
-                  Obrigatório
-                </span>
-              )}
-
+                {field.required && (
+                  <span className="text-red-500 text-sm font-semibold">
+                    Obrigatório
+                  </span>
+                )}
+              </div>
             </div>
 
             <div className="flex gap-2">
+              {/* BOTÕES DE REORDENAÇÃO (HISTÓRIA #10) */}
+              <button
+                onClick={() => moverCampo(index, 'cima')}
+                disabled={index === 0}
+                title="Mover para cima"
+                className="bg-gray-100 text-gray-700 px-3 py-1 rounded-lg hover:bg-gray-200 disabled:opacity-30 disabled:hover:bg-gray-100 transition-all"
+              >
+                🔼
+              </button>
+              
+              <button
+                onClick={() => moverCampo(index, 'baixo')}
+                disabled={index === totalFields - 1}
+                title="Mover para baixo"
+                className="bg-gray-100 text-gray-700 px-3 py-1 rounded-lg hover:bg-gray-200 disabled:opacity-30 disabled:hover:bg-gray-100 transition-all"
+              >
+                🔽
+              </button>
 
+              {/* LINHA DE SEPARAÇÃO VISUAL */}
+              <div className="w-[1px] bg-gray-200 mx-1"></div>
+
+              {/* BOTÕES QUE JÁ TINHAS */}
               <button
                 onClick={() => startEditing(field)}
-                className="bg-blue-100 text-blue-700 px-3 py-1 rounded-lg hover:bg-blue-200"
+                className="bg-blue-100 text-blue-700 px-3 py-1 rounded-lg hover:bg-blue-200 transition-all"
               >
                 Editar
               </button>
 
               <button
                 onClick={() => deleteField(field.id)}
-                className="bg-red-100 text-red-700 px-3 py-1 rounded-lg hover:bg-red-200"
+                className="bg-red-100 text-red-700 px-3 py-1 rounded-lg hover:bg-red-200 transition-all"
               >
                 Remover
               </button>
