@@ -114,7 +114,6 @@ const FormEditor = ({ formId, onGoHome }) => {
   const startEditing = (field) => {
     setEditingId(field.id);
     setEditData({ ...field });
-    setEditData({ ...field });
   };
 
 
@@ -235,7 +234,9 @@ const FormEditor = ({ formId, onGoHome }) => {
 
       response = await fetch(endpoint, {
         method: method,
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json'
+        },
         body: JSON.stringify(payload)
       });
 
@@ -251,6 +252,7 @@ const FormEditor = ({ formId, onGoHome }) => {
       }
 
       alert(`Formulário ${status === 'draft' ? 'salvo como rascunho' : 'publicado'} com sucesso!`);
+      console.log('Resposta do servidor:', data);
     } catch (error) {
       console.error('Erro ao salvar formulário:', error);
       alert(`Erro ao salvar: ${error.message}`);

@@ -11,5 +11,5 @@ router.get("/:id", (req, res) => controller.findById(req, res));
 router.get("/template/:formTemplateId", (req, res) =>
   controller.findByTemplateId(req, res)
 );
-router.patch("/:id/status", (req, res) => controller.updateStatus(req, res));
+
 export default router;
