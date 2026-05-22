@@ -3,7 +3,7 @@
 // Página principal do editor de formulários
 // ======================================================
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 // ======================================================
 // COMPONENTES DINÂMICOS
@@ -37,11 +37,20 @@ const FIELD_TYPES = {
 // ======================================================
 // COMPONENTE PRINCIPAL
 // ======================================================
-const FormEditor = () => {
+const FormEditor = ({ formId }) => {
 
   // ======================================================
   // ESTADOS
   // ======================================================
+
+  // ID do formulário sendo editado (pode ser null para novo)
+  const [currentFormId, setCurrentFormId] = useState(formId || null);
+
+  // Nome do formulário
+  const [formName, setFormName] = useState('Meu Formulário');
+
+  // Descrição do formulário
+  const [formDescription, setFormDescription] = useState('');
 
   // Lista de campos do formulário
   const [fields, setFields] = useState([]);
@@ -55,15 +64,114 @@ const FormEditor = () => {
   // Estado da janela Preview
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
+  // Estado de carregamento
+  const [isLoading, setIsLoading] = useState(false);
+
+  // ======================================================
+  // CARREGAR FORMULÁRIO EXISTENTE
+  // ======================================================
+  useEffect(() => {
+    if (formId) {
+      const loadFormData = async () => {
+        try {
+          setIsLoading(true);
+          const response = await fetch(`http://localhost:3000/form-templates/${formId}`);
+
+          if (!response.ok) {
+            throw new Error(`Erro ao carregar formulário: ${response.statusText}`);
+          }
+
+          const formData = await response.json();
+          setCurrentFormId(formData.id);
+          setFormName(formData.name);
+          setFormDescription(formData.description || '');
+          
+          // Garante que os campos vindos do banco respeitam a ordenação guardada
+          const camposOrdenados = formData.fields || [];
+          camposOrdenados.sort((a, b) => (a.order || 0) - (b.order || 0));
+          setFields(camposOrdenados);
+        } catch (error) {
+          console.error('Erro ao carregar formulário:', error);
+          alert(`Erro ao carregar rascunho: ${error.message}`);
+        } finally {
+          setIsLoading(false);
+        }
+      };
+
+      loadFormData();
+    }
+  }, [formId]);
+
+  // ======================================================
+  // REORDENAR POR DRAG & DROP (ARRUSTADOR)
+  // ======================================================
+  const reordenarCamposArrastados = async (draggedIndex, targetIndex) => {
+    if (draggedIndex === targetIndex) return;
+
+    const novosCampos = [...fields];
+    const [campoMovido] = novosCampos.splice(draggedIndex, 1);
+    novosCampos.splice(targetIndex, 0, campoMovido);
+
+    const camposMapeados = novosCampos.map((campo, idx) => ({
+      ...campo,
+      order: idx + 1,
+    }));
+
+    setFields(camposMapeados);
+    await sincronizarOrdemComBackend(camposMapeados);
+  };
+
+  // ======================================================
+  // REORDENAR POR BOTÕES CLICÁVEIS (SETAS SUBIR/DESCER)
+  // ======================================================
+  const moverCampo = async (index, direcao) => {
+    const novosCampos = [...fields];
+    const novoIndex = direcao === 'cima' ? index - 1 : index + 1;
+
+    if (novoIndex < 0 || novoIndex >= novosCampos.length) return;
+
+    const temp = novosCampos[index];
+    novosCampos[index] = novosCampos[novoIndex];
+    novosCampos[novoIndex] = temp;
+
+    const camposMapeados = novosCampos.map((campo, idx) => ({
+      ...campo,
+      order: idx + 1,
+    }));
+
+    setFields(camposMapeados);
+    await sincronizarOrdemComBackend(camposMapeados);
+  };
+
+  // Função utilitária para evitar duplicação de código HTTP
+  const sincronizarOrdemComBackend = async (camposOrdenados) => {
+    if (currentFormId) {
+      try {
+        const payload = {
+          name: formName,
+          description: formDescription,
+          fields: camposOrdenados
+        };
+
+        await fetch(`http://localhost:3000/form-templates/${currentFormId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+      } catch (error) {
+        console.error('Erro ao sincronizar ordenação com o servidor:', error);
+      }
+    }
+  };
+
   // ======================================================
   // REMOVER CAMPO
   // ======================================================
   const deleteField = (id) => {
-
-    setFields(prevFields =>
-      prevFields.filter(field => field.id !== id)
-    );
-
+    setFields(prevFields => {
+      const filtrados = prevFields.filter(field => field.id !== id);
+      return filtrados.map((field, idx) => ({ ...field, order: idx + 1 }));
+    });
   };
 
 
@@ -71,13 +179,8 @@ const FormEditor = () => {
   // INICIAR EDIÇÃO
   // ======================================================
   const startEditing = (field) => {
-
     setEditingId(field.id);
-
-    setEditData({
-      ...field
-    });
-
+    setEditData({ ...field });
   };
 
 
@@ -85,21 +188,10 @@ const FormEditor = () => {
   // GUARDAR ALTERAÇÕES
   // ======================================================
   const saveField = (id) => {
-
     setFields(prevFields =>
-
-      prevFields.map(field =>
-
-        field.id === id
-          ? editData
-          : field
-
-      )
-
+      prevFields.map(field => field.id === id ? editData : field)
     );
-
     setEditingId(null);
-
   };
 
 
@@ -107,11 +199,8 @@ const FormEditor = () => {
   // CANCELAR EDIÇÃO
   // ======================================================
   const cancelEditing = () => {
-
     setEditingId(null);
-
     setEditData({});
-
   };
 
 
@@ -119,21 +208,10 @@ const FormEditor = () => {
   // ADICIONAR OPÇÃO RADIO
   // ======================================================
   const addOption = () => {
-
     setEditData(prev => ({
-
       ...prev,
-
-      options: [
-
-        ...(prev.options || []),
-
-        `Opção ${(prev.options?.length || 0) + 1}`
-
-      ]
-
+      options: [...(prev.options || []), `Opção ${(prev.options?.length || 0) + 1}`]
     }));
-
   };
 
 
@@ -141,15 +219,10 @@ const FormEditor = () => {
   // REMOVER OPÇÃO RADIO
   // ======================================================
   const removeOption = (index) => {
-
     setEditData(prev => ({
-
       ...prev,
-
       options: prev.options.filter((_, i) => i !== index)
-
     }));
-
   };
 
 
@@ -157,28 +230,16 @@ const FormEditor = () => {
   // ATUALIZAR OPÇÃO RADIO
   // ======================================================
   const updateOption = (index, value) => {
-
     setEditData(prev => ({
-
       ...prev,
-
-      options: prev.options.map((opt, i) =>
-
-        i === index
-          ? value
-          : opt
-
-      )
-
+      options: prev.options.map((opt, i) => i === index ? value : opt)
     }));
-
   };
 
 
   // ======================================================
   // ADICIONAR NOVO CAMPO
   // ======================================================
- // Dentro do FormEditor, atualiza o renderField:
   const renderField = (field) => {
     switch (field.type) {
       case FIELD_TYPES.LABEL:
@@ -187,21 +248,20 @@ const FormEditor = () => {
         return <FormRadioGroup label={field.label} options={field.options} required={field.required} />;
       case FIELD_TYPES.CHECKBOX:
         return <FormCheckbox label={field.label} description={field.label} required={field.required} />;
-      case FIELD_TYPES.DROPDOWN: // <-- Novo
+      case FIELD_TYPES.DROPDOWN: 
         return <FormDropdown label={field.label} options={field.options} required={field.required} />;
       default:
         return null;
     }
   };
 
-  // Atualiza o addField para suportar opções no dropdown:
   const addField = (type) => {
     const newField = {
       id: crypto.randomUUID(), 
       type: type,
       label: `Novo campo de ${type}`,
       required: false, 
-      options: (type === FIELD_TYPES.RADIO || type === FIELD_TYPES.DROPDOWN) ? ['Opção 1'] : [], // <-- Atualizado
+      options: (type === FIELD_TYPES.RADIO || type === FIELD_TYPES.DROPDOWN) ? ['Opção 1'] : [], 
       order: fields.length + 1, 
     };
     setFields(prevFields => [...prevFields, newField]);
@@ -209,79 +269,127 @@ const FormEditor = () => {
 
 
   // ======================================================
-  // RENDER PRINCIPAL
+  // SALVAR FORMULÁRIO NO BANCO DE DADOS
   // ======================================================
+  const saveFormToDatabase = async (status) => {
+    try {
+      const payload = {
+        name: formName,
+        description: formDescription,
+        fields: fields,
+        status: status
+      };
+
+      let response;
+      let method = 'POST';
+      let endpoint = 'http://localhost:3000/form-templates';
+
+      if (currentFormId) {
+        method = 'PATCH';
+        endpoint = `http://localhost:3000/form-templates/${currentFormId}`;
+      }
+
+      response = await fetch(endpoint, {
+        method: method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        throw new Error(`Erro ao salvar: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      
+      if (!currentFormId) {
+        setCurrentFormId(data.id);
+      }
+
+      alert(`Formulário ${status === 'draft' ? 'salvo como rascunho' : 'publicado'} com sucesso!`);
+    } catch (error) {
+      console.error('Erro ao salvar formulário:', error);
+      alert(`Erro ao salvar: ${error.message}`);
+    }
+  };
+
+  const handleSaveDraft = () => saveFormToDatabase('draft');
+  const handleSubmit = () => saveFormToDatabase('published');
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-100">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+          <p className="text-gray-600 mt-4">A carregar formulário...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
+    <div className="flex bg-gray-100 min-h-screen">
+      <Sidebar addField={addField} FIELD_TYPES={FIELD_TYPES} />
 
-  <div className="flex bg-gray-100 min-h-screen">
+      <div className="flex-1 p-10">
+        <h1 className="text-4xl font-bold text-gray-800 mb-2">Editor de Formulário</h1>
 
-    {/* SIDEBAR */}
-    <Sidebar
-      addField={addField}
-      FIELD_TYPES={FIELD_TYPES}
-    />
+        <input
+          type="text"
+          value={formName}
+          onChange={(e) => setFormName(e.target.value)}
+          placeholder="Nome do formulário"
+          className="mb-4 px-4 py-2 w-full max-w-2xl border border-gray-300 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        />
 
-    {/* CONTEÚDO */}
-    <div className="flex-1 p-10">
+        <textarea
+          value={formDescription}
+          onChange={(e) => setFormDescription(e.target.value)}
+          placeholder="Descrição do formulário (opcional)"
+          className="mb-6 px-4 py-2 w-full max-w-2xl border border-gray-300 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+          rows="2"
+        />
 
-      {/* TÍTULO */}
-      <h1 className="text-4xl font-bold text-gray-800 mb-6">
-        Editor de Formulário
-      </h1>
+        <Toolbar
+          addField={addField}
+          FIELD_TYPES={FIELD_TYPES}
+          mockMode={isPreviewOpen}
+          setMockMode={setIsPreviewOpen}
+          handleSubmit={handleSubmit}
+          handleSaveDraft={handleSaveDraft}
+        />
 
-      {/* TOOLBAR */}
-      <Toolbar
-        addField={addField}
-        FIELD_TYPES={FIELD_TYPES}
-        mockMode={isPreviewOpen}
-        setMockMode={setIsPreviewOpen}
-        handleSubmit={() => console.log("Submeter")}
-      />
+        <div className="border-2 border-dashed border-gray-300 bg-white rounded-2xl p-6 min-h-[400px] shadow-sm">
+          {fields.length === 0 ? (
+            <p className="text-gray-400 text-center mt-10">Adicione componentes usando a Sidebar.</p>
+          ) : (
+            <div className="space-y-4">
+              {fields.map((field, index) => (
+                <FieldCard
+                  key={field.id}
+                  field={field}
+                  index={index}
+                  totalFields={fields.length}
+                  reordenarCamposArrastados={reordenarCamposArrastados}
+                  moverCampo={moverCampo}
+                  editingId={editingId}
+                  editData={editData}
+                  setEditData={setEditData}
+                  saveField={saveField}
+                  cancelEditing={cancelEditing}
+                  startEditing={startEditing}
+                  deleteField={deleteField}
+                  FIELD_TYPES={FIELD_TYPES}
+                  updateOption={updateOption}
+                  removeOption={removeOption}
+                  addOption={addOption}
+                  renderField={renderField}
+                />
+              ))}
+            </div>
+          )}
+        </div>
 
-      {/* CANVAS */}
-      <div className="border-2 border-dashed border-gray-300 bg-white rounded-2xl p-6 min-h-[400px] shadow-sm">
-
-        {fields.length === 0 ? (
-
-          <p className="text-gray-400 text-center mt-10">
-            Adicione componentes usando a Sidebar.
-          </p>
-
-        ) : (
-
-          <div className="space-y-4">
-
-            {fields.map((field) => (
-
-              <FieldCard
-                key={field.id}
-                field={field}
-
-                editingId={editingId}
-                editData={editData}
-                setEditData={setEditData}
-
-                saveField={saveField}
-                cancelEditing={cancelEditing}
-
-                startEditing={startEditing}
-                deleteField={deleteField}
-
-                FIELD_TYPES={FIELD_TYPES}
-
-                updateOption={updateOption}
-                removeOption={removeOption}
-                addOption={addOption}
-
-                renderField={renderField}
-              />
-
-            ))}
-
-          </div>
-
-        )}
-
+        <PreviewModal isOpen={isPreviewOpen} onClose={() => setIsPreviewOpen(false)} schema={fields} />
       </div>
 
       {/* PREVIEW */}
@@ -289,13 +397,11 @@ const FormEditor = () => {
         isOpen={isPreviewOpen}
         onClose={() => setIsPreviewOpen(false)}
         schema={fields}
+        formTemplateId={currentFormId}
       />
 
     </div>
-
-  </div>
-
-);
+  );
 };
 
 export default FormEditor;

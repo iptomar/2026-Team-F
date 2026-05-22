@@ -5,7 +5,8 @@ const Toolbar = ({
   FIELD_TYPES,
   mockMode,
   setMockMode,
-  handleSubmit
+  handleSubmit,
+  handleSaveDraft
 }) => {
 
   return (
@@ -50,6 +51,14 @@ const Toolbar = ({
         className="px-5 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition"
       >
         {mockMode ? "Fechar Preview" : "Abrir Preview"}
+      </button>
+
+      {/* Botão Guardar Rascunho */}
+      <button
+        onClick={handleSaveDraft}
+        className="px-5 py-2 bg-gray-100 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-200 transition"
+      >
+        Guardar Rascunho
       </button>
 
       {/* Botão Submeter */}
