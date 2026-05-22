@@ -86,4 +86,31 @@ export class FormSubmissionController {
       });
     }
   }
-}
+  async updateStatus(req: Request<{ id: string }>, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const { status } = req.body;
+
+      if (!status || typeof status !== "string") {
+        res.status(400).json({
+          error: "O campo 'status' é obrigatório.",
+        });
+        return;
+      }
+
+      // Chama o serviço para atualizar o estado na base de dados
+      const updatedSubmission = await service.updateStatus(id, status);
+
+      if (!updatedSubmission) {
+        res.status(404).json({ error: "Submissão não encontrada." });
+        return;
+      }
+
+      res.json(updatedSubmission);
+    } catch (error) {
+      console.error("Erro ao atualizar estado da submissão:", error);
+      res.status(500).json({ error: "Erro interno ao atualizar o estado." });
+    }
+  }
+
+} 
