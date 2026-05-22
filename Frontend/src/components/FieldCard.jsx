@@ -182,7 +182,6 @@ const FieldCard = ({
               >
                 🔽
               </button>
-
               {/* LINHA DE SEPARAÇÃO VISUAL */}
               <div className="w-[1px] bg-gray-200 mx-1"></div>
 
