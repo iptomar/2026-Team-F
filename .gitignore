@@ -1,3 +1,6 @@
+# sqlite
+Backend/database.sqlite
+
 # Dependencies
 node_modules/
 package-lock.json
@@ -5,6 +8,10 @@ package-lock.json
 # Build output
 dist/
 build/
+
+# SQLite database files
+*.sqlite
+*.sqlite3
 
 # Environment variables
 .env
@@ -33,3 +40,6 @@ yarn-error.log*
 
 # Test coverage
 coverage/
+
+# Test files
+payload.json

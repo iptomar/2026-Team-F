@@ -27,8 +27,8 @@ export class CreateFormTemplates1712700000000 implements MigrationInterface {
           },
           {
             name: "status",
-            type: "enum",
-            enum: ["draft", "published"],
+            type: "varchar",
+            length: "20",
             default: "'draft'",
           },
           {
@@ -50,15 +50,12 @@ export class CreateFormTemplates1712700000000 implements MigrationInterface {
           {
             name: "created_at",
             type: "datetime",
-            length: "6",
-            default: "CURRENT_TIMESTAMP(6)",
+            default: "CURRENT_TIMESTAMP",
           },
           {
             name: "updated_at",
             type: "datetime",
-            length: "6",
-            default: "CURRENT_TIMESTAMP(6)",
-            onUpdate: "CURRENT_TIMESTAMP(6)",
+            default: "CURRENT_TIMESTAMP",
           },
         ],
       }),

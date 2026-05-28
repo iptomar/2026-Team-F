@@ -1,0 +1,29 @@
+/* src/App.css */
+body {
+  margin: 0;
+  font-family: 'Segoe UI', Roboto, sans-serif;
+  background-color: #f0f2f5;
+  color: #1c1e21;
+}
+
+.card {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  margin-bottom: 15px;
+}
+
+.btn-blue {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.btn-blue:hover {
+  background-color: #0056b3;
+}
