@@ -149,6 +149,49 @@ const FormEditor = ({ formId, onGoHome }) => {
   };
 
   // ======================================================
+  // REORDENAR POR DRAG & DROP (HISTÓRIA #17) - ADICIONADO ADITIVAMENTE
+  // ======================================================
+  const reordenarCamposArrastados = async (draggedIndex, targetIndex) => {
+    if (draggedIndex === targetIndex) return;
+
+    const novosCampos = [...fields];
+    // Remove o componente da posição antiga
+    const [campoMovido] = novosCampos.splice(draggedIndex, 1);
+    // Insere o componente na nova posição de destino
+    novosCampos.splice(targetIndex, 0, campoMovido);
+
+    // Reatribui o valor correto de 'order' baseado na nova sequência consecutiva do array
+    const camposMapeados = novosCampos.map((campo, idx) => ({
+      ...campo,
+      order: idx + 1,
+    }));
+
+    // Atualiza o estado local para renderização imediata na tela
+    setFields(camposMapeados);
+
+    // Se o formulário já existir na BD, sincroniza a nova ordem automaticamente por PATCH
+    if (currentFormId) {
+      try {
+        const payload = {
+          name: formName,
+          description: formDescription,
+          fields: camposMapeados
+        };
+
+        await fetch(`http://localhost:3000/form-templates/${currentFormId}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+      } catch (error) {
+        console.error('Erro ao sincronizar ordenação por arrastamento com o servidor:', error);
+      }
+    }
+  };
+
+  // ======================================================
   // REMOVER CAMPO
   // ======================================================
   const deleteField = (id) => {
@@ -502,6 +545,7 @@ const FormEditor = ({ formId, onGoHome }) => {
                     index={index}
                     totalFields={fields.length}
                     moverCampo={moverCampo}
+                    reordenarCamposArrastados={reordenarCamposArrastados} // Prop injetada estritamente aqui
 
                     editingId={editingId}
                     editData={editData}
