@@ -13,59 +13,100 @@ const FieldWrapper = ({ label, required, children, error }) => (
   </div>
 );
 
-// 1. Bloco de Texto (Label)
+// 1. Bloco de Texto / Título / Secção
 export const FormLabel = ({ value, description }) => (
   <div className="mb-6 p-2 border-l-4 border-blue-500 bg-blue-50">
-    <h3 className="text-xl font-bold text-blue-900">{value || "Título da Secção"}</h3>
+    <h3 className="text-xl font-bold text-blue-900">
+      {value || 'Título da Secção'}
+    </h3>
     {description && <p className="text-sm text-blue-700 mt-1">{description}</p>}
   </div>
 );
 
-// 2. Componente de Grupo de Radio Buttons (Radio Group)
-export const FormRadioGroup = ({ label, options = [], required, error, isPreview }) => (
+// 2. Grupo de Radio Buttons
+export const FormRadioGroup = ({
+  label,
+  options = [],
+  required,
+  error,
+  isPreview = false,
+  value = '',
+  onChange,
+}) => (
   <FieldWrapper label={label} required={required} error={error}>
     <div className="space-y-2">
       {options.length > 0 ? (
         options.map((opt, index) => (
-          <label key={index} className="flex items-center p-3 border rounded-md cursor-pointer hover:bg-gray-50 transition">
-            <input 
-              type="radio" 
-              name={label} 
-              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300" 
-              disabled={!isPreview} 
+          <label
+            key={index}
+            className="flex items-center p-3 border rounded-md cursor-pointer hover:bg-gray-50 transition"
+          >
+            <input
+              type="radio"
+              name={label}
+              value={opt}
+              checked={value === opt}
+              onChange={() => onChange?.(opt)}
+              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+              disabled={!isPreview}
             />
             <span className="ml-3 text-gray-700">{opt}</span>
           </label>
         ))
       ) : (
-        <p className="text-xs italic text-gray-400">Nenhuma opção configurada.</p>
+        <p className="text-xs italic text-gray-400">
+          Nenhuma opção configurada.
+        </p>
       )}
     </div>
   </FieldWrapper>
 );
 
-// 3. Componente de Checkbox Individual ou Grupo
-export const FormCheckbox = ({ label, description, required, error, isPreview }) => (
+// 3. Checkbox
+export const FormCheckbox = ({
+  label,
+  description,
+  required,
+  error,
+  isPreview = false,
+  checked = false,
+  onChange,
+}) => (
   <FieldWrapper label={label} required={required} error={error}>
-    <div className="flex items-start p-3 border rounded-md hover:bg-gray-50 transition cursor-pointer">
+    <label className="flex items-start p-3 border rounded-md hover:bg-gray-50 transition cursor-pointer">
       <div className="flex items-center h-5">
-        <input 
-          type="checkbox" 
-          className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded" 
+        <input
+          type="checkbox"
+          checked={Boolean(checked)}
+          onChange={onChange}
+          className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
           disabled={!isPreview}
         />
       </div>
+
       <div className="ml-3 text-sm">
-        <label className="font-medium text-gray-700">{description || "Confirmar seleção"}</label>
+        <span className="font-medium text-gray-700">
+          {description || 'Confirmar seleção'}
+        </span>
       </div>
-    </div>
+    </label>
   </FieldWrapper>
 );
 
-// 4. Componente de Dropdown (Select)
-export const FormDropdown = ({ label, options = [], required, error, isPreview }) => (
+// 4. Dropdown
+export const FormDropdown = ({
+  label,
+  options = [],
+  required,
+  error,
+  isPreview = false,
+  value = '',
+  onChange,
+}) => (
   <FieldWrapper label={label} required={required} error={error}>
     <select
+      value={value || ''}
+      onChange={onChange}
       className="w-full p-3 border border-gray-300 rounded-md bg-white text-gray-700 hover:bg-gray-50 transition cursor-pointer focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
       disabled={!isPreview}
     >
@@ -77,7 +118,9 @@ export const FormDropdown = ({ label, options = [], required, error, isPreview }
           </option>
         ))
       ) : (
-        <option value="" disabled>Nenhuma opção configurada</option>
+        <option value="" disabled>
+          Nenhuma opção configurada
+        </option>
       )}
     </select>
   </FieldWrapper>

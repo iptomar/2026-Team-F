@@ -579,6 +579,7 @@ const FormEditor = ({ formId, onGoHome }) => {
             isOpen={isPreviewOpen}
             onClose={() => setIsPreviewOpen(false)}
             schema={fields}
+            formTemplateId={currentFormId}
           />
 
         </div>
