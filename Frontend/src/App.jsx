@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import AuthPage from './pages/AuthPage';
 import HomePage from './pages/HomePage';
 import FormEditor from './pages/FormEditor';
+import SubmissionsPage from './pages/SubmissionsPage';
+import SubmissionDetailPage from './pages/SubmissionDetailPage';
 import {
   clearAuthSession,
   getAuthenticatedUser,
@@ -14,6 +16,7 @@ import {
 function App() {
   const [currentPage, setCurrentPage] = useState('home');
   const [selectedFormId, setSelectedFormId] = useState(null);
+  const [selectedSubmissionId, setSelectedSubmissionId] = useState(null);
 
   const [authToken, setAuthToken] = useState(() => getStoredToken());
   const [authUser, setAuthUser] = useState(() => getStoredUser());
@@ -67,6 +70,7 @@ function App() {
       setAuthToken(null);
       setAuthUser(null);
       setSelectedFormId(null);
+      setSelectedSubmissionId(null);
       setCurrentPage('home');
     }
   };
@@ -84,6 +88,22 @@ function App() {
   const handleGoHome = () => {
     setCurrentPage('home');
     setSelectedFormId(null);
+    setSelectedSubmissionId(null);
+  };
+
+  const handleViewSubmissions = () => {
+    setCurrentPage('submissions');
+    setSelectedSubmissionId(null);
+  };
+
+  const handleViewSubmissionDetail = (submissionId) => {
+    setSelectedSubmissionId(submissionId);
+    setCurrentPage('submission_detail');
+  };
+
+  const handleBackToSubmissions = () => {
+    setSelectedSubmissionId(null);
+    setCurrentPage('submissions');
   };
 
   if (isCheckingSession) {
@@ -127,6 +147,17 @@ function App() {
           )}
 
           <button
+            onClick={handleViewSubmissions}
+            className={`px-4 py-2 rounded-lg transition font-medium ${
+              currentPage === 'submissions' || currentPage === 'submission_detail'
+                ? 'bg-indigo-600 text-white shadow-sm'
+                : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200'
+            }`}
+          >
+            Ver Submissões
+          </button>
+
+          <button
             onClick={handleLogout}
             className="px-4 py-2 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-lg transition"
           >
@@ -149,6 +180,17 @@ function App() {
           authUser={authUser}
           authToken={authToken}
           onGoHome={handleGoHome}
+        />
+      )}
+
+      {currentPage === 'submissions' && (
+        <SubmissionsPage onViewDetails={handleViewSubmissionDetail} />
+      )}
+
+      {currentPage === 'submission_detail' && selectedSubmissionId && (
+        <SubmissionDetailPage
+          submissionId={selectedSubmissionId}
+          onBack={handleBackToSubmissions}
         />
       )}
     </div>
