@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { FormSubmissionService } from "../services/formSubmissionService"
+import { FormSubmissionService } from "../services/formSubmissionService";
 
 const service = new FormSubmissionService();
 
@@ -67,6 +67,29 @@ export class FormSubmissionController {
     } catch (error) {
       console.error("Erro ao consultar submissão:", error);
       res.status(500).json({ error: "Erro interno ao consultar submissão." });
+    }
+  }
+
+  async findDetailsById(
+    req: Request<{ id: string }>,
+    res: Response
+  ): Promise<void> {
+    try {
+      const { id } = req.params;
+
+      const details = await service.findDetailsById(id);
+
+      if (!details) {
+        res.status(404).json({ error: "Submissão não encontrada." });
+        return;
+      }
+
+      res.json(details);
+    } catch (error) {
+      console.error("Erro ao consultar detalhe da submissão:", error);
+      res.status(500).json({
+        error: "Erro interno ao consultar detalhe da submissão.",
+      });
     }
   }
 
