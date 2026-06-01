@@ -364,9 +364,9 @@ const FormEditor = ({ formId, onGoHome }) => {
 
 
   // ======================================================
-  // SUBMETER FORMULÁRIO
+  // PUBLICAR FORMULÁRIO
   // ======================================================
-  const handleSubmit = () => {
+  const handlePublish = () => {
     saveFormToDatabase('published');
   };
 
@@ -485,9 +485,9 @@ const FormEditor = ({ formId, onGoHome }) => {
               Guardar Rascunho
             </button>
 
-            {/* Submeter / Publicar */}
+            {/* Publicar */}
             <button
-              onClick={handleSubmit}
+              onClick={handlePublish}
               className="bg-blue-600 text-white hover:bg-blue-700 px-5 py-2 rounded-lg text-sm font-semibold shadow-sm transition"
             >
               Publicar
@@ -574,12 +574,11 @@ const FormEditor = ({ formId, onGoHome }) => {
 
           </div>
 
-          {/* PREVIEW */}
+          {/* PREVIEW — apenas visualização, sem submissão */}
           <PreviewModal
             isOpen={isPreviewOpen}
             onClose={() => setIsPreviewOpen(false)}
             schema={fields}
-            formTemplateId={currentFormId}
           />
 
         </div>
