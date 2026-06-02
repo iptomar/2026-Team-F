@@ -6,6 +6,7 @@ import {
   FormSubmissionStatus,
 } from "../models/FormSubmission";
 import { FormTemplate } from "../models/FormTemplate";
+import { SubmissionStatusHistory } from "../models/SubmissionStatusHistory";
 
 interface CreateFormSubmissionInput {
   form_template_id: string;
@@ -15,6 +16,7 @@ interface CreateFormSubmissionInput {
 
 interface UpdateSubmissionStatusInput {
   status: FormSubmissionStatus;
+  changed_by?: string | null;
 }
 
 interface FormFieldLike {
@@ -88,6 +90,10 @@ export class FormSubmissionService {
 
   private get templateRepository(): Repository<FormTemplate> {
     return AppDataSource.getRepository(FormTemplate);
+  }
+
+  private get statusHistoryRepository(): Repository<SubmissionStatusHistory> {
+    return AppDataSource.getRepository(SubmissionStatusHistory);
   }
 
   async create(data: CreateFormSubmissionInput): Promise<FormSubmission | null> {
@@ -164,28 +170,60 @@ export class FormSubmissionService {
     id: string,
     data: UpdateSubmissionStatusInput
   ): Promise<FormSubmission | null> {
-    const submission = await this.submissionRepository.findOneBy({ id });
+    return AppDataSource.transaction(async (transactionalEntityManager) => {
+      const submissionRepository =
+        transactionalEntityManager.getRepository(FormSubmission);
+      const statusHistoryRepository =
+        transactionalEntityManager.getRepository(SubmissionStatusHistory);
 
-    if (!submission) {
-      return null;
-    }
+      const submission = await submissionRepository.findOneBy({ id });
 
-    if (submission.status === data.status) {
-      return submission;
-    }
+      if (!submission) {
+        return null;
+      }
 
-    const isTransitionAllowed = this.isStatusTransitionAllowed(
-      submission.status,
-      data.status
-    );
+      if (submission.status === data.status) {
+        return submission;
+      }
 
-    if (!isTransitionAllowed) {
-      throw new Error(INVALID_STATUS_TRANSITION_ERROR);
-    }
+      const previousStatus = submission.status;
 
-    submission.status = data.status;
+      const isTransitionAllowed = this.isStatusTransitionAllowed(
+        previousStatus,
+        data.status
+      );
 
-    return this.submissionRepository.save(submission);
+      if (!isTransitionAllowed) {
+        throw new Error(INVALID_STATUS_TRANSITION_ERROR);
+      }
+
+      submission.status = data.status;
+
+      const updatedSubmission = await submissionRepository.save(submission);
+
+      const history = statusHistoryRepository.create({
+        submission_id: updatedSubmission.id,
+        previous_status: previousStatus,
+        new_status: data.status,
+        changed_by:
+          data.changed_by?.trim() ||
+          updatedSubmission.submitted_by ||
+          null,
+      });
+
+      await statusHistoryRepository.save(history);
+
+      return updatedSubmission;
+    });
+  }
+
+  async findHistoryBySubmissionId(
+    submissionId: string
+  ): Promise<SubmissionStatusHistory[]> {
+    return this.statusHistoryRepository.find({
+      where: { submission_id: submissionId },
+      order: { changed_at: "ASC" },
+    });
   }
 
   private isStatusTransitionAllowed(

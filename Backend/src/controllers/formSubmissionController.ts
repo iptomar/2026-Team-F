@@ -21,6 +21,18 @@ function validateSubmissionStatus(status: unknown): string | null {
   return null;
 }
 
+function validateChangedBy(changedBy: unknown): string | null {
+  if (
+    changedBy !== undefined &&
+    changedBy !== null &&
+    typeof changedBy !== "string"
+  ) {
+    return "O campo 'changed_by' deve ser uma string ou null.";
+  }
+
+  return null;
+}
+
 export class FormSubmissionController {
   async create(req: Request, res: Response): Promise<void> {
     try {
@@ -131,7 +143,7 @@ export class FormSubmissionController {
   async updateStatus(req: Request<{ id: string }>, res: Response): Promise<void> {
     try {
       const { id } = req.params;
-      const { status } = req.body;
+      const { status, changed_by } = req.body;
 
       const statusError = validateSubmissionStatus(status);
 
@@ -140,8 +152,16 @@ export class FormSubmissionController {
         return;
       }
 
+      const changedByError = validateChangedBy(changed_by);
+
+      if (changedByError) {
+        res.status(400).json({ error: changedByError });
+        return;
+      }
+
       const updatedSubmission = await service.updateStatus(id, {
         status: status as FormSubmissionStatus,
+        changed_by: changed_by ?? null,
       });
 
       if (!updatedSubmission) {
