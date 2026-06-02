@@ -13,6 +13,10 @@ interface CreateFormSubmissionInput {
   submitted_by?: string | null;
 }
 
+interface UpdateSubmissionStatusInput {
+  status: FormSubmissionStatus;
+}
+
 interface FormFieldLike {
   id?: string;
   type?: string;
@@ -48,6 +52,8 @@ interface FormSubmissionDetails {
   };
 }
 
+export const INVALID_STATUS_TRANSITION_ERROR = "INVALID_STATUS_TRANSITION";
+
 const STRUCTURAL_FIELD_TYPES = new Set<string>([
   "label",
   "section",
@@ -58,6 +64,22 @@ const STRUCTURAL_FIELD_TYPES = new Set<string>([
   "paragraph",
   "spacer",
 ]);
+
+const ALLOWED_STATUS_TRANSITIONS: Record<
+  FormSubmissionStatus,
+  FormSubmissionStatus[]
+> = {
+  [FormSubmissionStatus.SUBMITTED]: [
+    FormSubmissionStatus.IN_PROGRESS,
+    FormSubmissionStatus.REJECTED,
+  ],
+  [FormSubmissionStatus.IN_PROGRESS]: [
+    FormSubmissionStatus.COMPLETED,
+    FormSubmissionStatus.REJECTED,
+  ],
+  [FormSubmissionStatus.COMPLETED]: [],
+  [FormSubmissionStatus.REJECTED]: [],
+};
 
 export class FormSubmissionService {
   private get submissionRepository(): Repository<FormSubmission> {
@@ -136,6 +158,42 @@ export class FormSubmissionService {
         submitted_at: submission.submitted_at,
       },
     };
+  }
+
+  async updateStatus(
+    id: string,
+    data: UpdateSubmissionStatusInput
+  ): Promise<FormSubmission | null> {
+    const submission = await this.submissionRepository.findOneBy({ id });
+
+    if (!submission) {
+      return null;
+    }
+
+    if (submission.status === data.status) {
+      return submission;
+    }
+
+    const isTransitionAllowed = this.isStatusTransitionAllowed(
+      submission.status,
+      data.status
+    );
+
+    if (!isTransitionAllowed) {
+      throw new Error(INVALID_STATUS_TRANSITION_ERROR);
+    }
+
+    submission.status = data.status;
+
+    return this.submissionRepository.save(submission);
+  }
+
+  private isStatusTransitionAllowed(
+    currentStatus: FormSubmissionStatus,
+    nextStatus: FormSubmissionStatus
+  ): boolean {
+    const allowedNextStatuses = ALLOWED_STATUS_TRANSITIONS[currentStatus] ?? [];
+    return allowedNextStatuses.includes(nextStatus);
   }
 
   private buildReadableAnswers(

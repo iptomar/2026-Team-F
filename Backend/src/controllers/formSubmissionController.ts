@@ -1,7 +1,25 @@
 import { Request, Response } from "express";
-import { FormSubmissionService } from "../services/formSubmissionService";
+import { FormSubmissionStatus } from "../models/FormSubmission";
+import {
+  FormSubmissionService,
+  INVALID_STATUS_TRANSITION_ERROR,
+} from "../services/formSubmissionService";
 
 const service = new FormSubmissionService();
+
+const allowedSubmissionStatuses = Object.values(FormSubmissionStatus);
+
+function validateSubmissionStatus(status: unknown): string | null {
+  if (!status || typeof status !== "string") {
+    return "O campo 'status' é obrigatório.";
+  }
+
+  if (!allowedSubmissionStatuses.includes(status as FormSubmissionStatus)) {
+    return "Status inválido. Use: submitted, in_progress, completed ou rejected.";
+  }
+
+  return null;
+}
 
 export class FormSubmissionController {
   async create(req: Request, res: Response): Promise<void> {
@@ -106,6 +124,49 @@ export class FormSubmissionController {
       console.error("Erro ao listar submissões por template:", error);
       res.status(500).json({
         error: "Erro interno ao listar submissões por template.",
+      });
+    }
+  }
+
+  async updateStatus(req: Request<{ id: string }>, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const { status } = req.body;
+
+      const statusError = validateSubmissionStatus(status);
+
+      if (statusError) {
+        res.status(400).json({ error: statusError });
+        return;
+      }
+
+      const updatedSubmission = await service.updateStatus(id, {
+        status: status as FormSubmissionStatus,
+      });
+
+      if (!updatedSubmission) {
+        res.status(404).json({ error: "Submissão não encontrada." });
+        return;
+      }
+
+      res.json({
+        message: "Estado da submissão atualizado com sucesso.",
+        submission: updatedSubmission,
+      });
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        error.message === INVALID_STATUS_TRANSITION_ERROR
+      ) {
+        res.status(400).json({
+          error: "Transição de estado inválida para esta submissão.",
+        });
+        return;
+      }
+
+      console.error("Erro ao atualizar estado da submissão:", error);
+      res.status(500).json({
+        error: "Erro interno ao atualizar estado da submissão.",
       });
     }
   }
