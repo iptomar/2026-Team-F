@@ -1,4 +1,5 @@
 import React from 'react';
+import { AlertCircle } from 'lucide-react';
 
 const FieldWrapper = ({ label, required, children, error }) => (
   <div className="flex flex-col p-4 bg-white border border-slate-200 rounded-2xl hover:border-indigo-200 hover:shadow-sm transition-all">
@@ -18,8 +19,9 @@ const FieldWrapper = ({ label, required, children, error }) => (
     {children}
 
     {error && (
-      <p className="mt-2 text-xs text-red-500 font-semibold">
-        {error}
+      <p className="mt-2 text-xs text-red-500 font-semibold inline-flex items-center gap-1.5">
+        <AlertCircle size={14} />
+        <span>{error}</span>
       </p>
     )}
   </div>

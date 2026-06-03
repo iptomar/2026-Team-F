@@ -1,4 +1,16 @@
 import { useEffect, useState } from 'react';
+import {
+  Blocks,
+  CheckCircle2,
+  ClipboardList,
+  FileText,
+  Home,
+  Loader2,
+  LogOut,
+  NotebookPen,
+  Sparkles,
+  Undo2,
+} from 'lucide-react';
 import AuthPage from './pages/AuthPage';
 import HomePage from './pages/HomePage';
 import FormEditor from './pages/FormEditor';
@@ -19,6 +31,7 @@ function App() {
   const [selectedFormId, setSelectedFormId] = useState(null);
   const [selectedSubmissionId, setSelectedSubmissionId] = useState(null);
   const [selectedTemplateId, setSelectedTemplateId] = useState(null);
+  const [hasVisitedEditor, setHasVisitedEditor] = useState(false);
 
   const [authToken, setAuthToken] = useState(() => getStoredToken());
   const [authUser, setAuthUser] = useState(() => getStoredUser());
@@ -80,17 +93,23 @@ function App() {
 
   const handleCreateNew = () => {
     setSelectedFormId(null);
+    setHasVisitedEditor(true);
     setCurrentPage('editor');
   };
 
   const handleSelectDraft = (formId) => {
     setSelectedFormId(formId);
+    setHasVisitedEditor(true);
+    setCurrentPage('editor');
+  };
+
+  const handleReturnToEditor = () => {
+    setHasVisitedEditor(true);
     setCurrentPage('editor');
   };
 
   const handleGoHome = () => {
     setCurrentPage('home');
-    setSelectedFormId(null);
     setSelectedSubmissionId(null);
     setSelectedTemplateId(null);
   };
@@ -143,7 +162,7 @@ function App() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50 flex items-center justify-center">
         <div className="text-center bg-white border border-slate-200 rounded-2xl shadow-sm px-10 py-8">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+          <Loader2 className="h-12 w-12 animate-spin text-indigo-600 mx-auto" />
           <p className="text-slate-600 mt-4 font-medium">A validar sessão...</p>
         </div>
       </div>
@@ -153,6 +172,13 @@ function App() {
   if (!authToken || !authUser) {
     return <AuthPage onAuthenticated={handleAuthenticated} />;
   }
+
+  const homeNavItems = [
+    { id: 'editor', label: 'Criar', icon: Sparkles },
+    { id: 'templates', label: 'Modelos', icon: Blocks },
+    { id: 'drafts', label: 'Rascunhos', icon: NotebookPen },
+    { id: 'published', label: 'Publicados', icon: CheckCircle2 },
+  ];
 
   return (
     <div className="App min-h-screen bg-slate-50 text-slate-900">
@@ -166,7 +192,7 @@ function App() {
               title="Voltar à página inicial"
             >
               <span className="h-11 w-11 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-sm group-hover:bg-indigo-700 group-hover:scale-105 transition-all">
-                📋
+                <FileText size={22} strokeWidth={2.4} />
               </span>
 
               <span>
@@ -181,6 +207,17 @@ function App() {
             </button>
 
             <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+              {currentPage !== 'editor' && hasVisitedEditor && (
+                <button
+                  type="button"
+                  onClick={handleReturnToEditor}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all border bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 hover:border-emerald-300"
+                >
+                  <Undo2 size={17} />
+                  <span>Continuar edição</span>
+                </button>
+              )}
+              
               <button
                 type="button"
                 onClick={handleGoHome}
@@ -190,7 +227,7 @@ function App() {
                     : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50 hover:border-slate-300'
                 }`}
               >
-                <span>🏠</span>
+                <Home size={17} />
                 <span>Home</span>
               </button>
 
@@ -203,7 +240,7 @@ function App() {
                     : 'bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100 hover:border-indigo-300'
                 }`}
               >
-                <span>📄</span>
+                <ClipboardList size={17} />
                 <span>Ver Submissões</span>
               </button>
 
@@ -212,7 +249,7 @@ function App() {
                 onClick={handleLogout}
                 className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 hover:border-red-300 transition-all"
               >
-                <span>🚪</span>
+                <LogOut size={17} />
                 <span>Terminar sessão</span>
               </button>
             </div>
@@ -220,22 +257,21 @@ function App() {
 
           {currentPage === 'home' && (
             <nav className="flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
-              {[
-                { id: 'editor', label: 'Criar', icon: '✨' },
-                { id: 'templates', label: 'Modelos', icon: '🧩' },
-                { id: 'drafts', label: 'Rascunhos', icon: '📝' },
-                { id: 'published', label: 'Publicados', icon: '✅' },
-              ].map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => navigateHomeSection(item.id)}
-                  className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-semibold text-slate-600 hover:text-indigo-700 hover:bg-indigo-50 transition-all"
-                >
-                  <span>{item.icon}</span>
-                  <span>{item.label}</span>
-                </button>
-              ))}
+              {homeNavItems.map((item) => {
+                const Icon = item.icon;
+
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => navigateHomeSection(item.id)}
+                    className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-semibold text-slate-600 hover:text-indigo-700 hover:bg-indigo-50 transition-all"
+                  >
+                    <Icon size={16} />
+                    <span>{item.label}</span>
+                  </button>
+                );
+              })}
             </nav>
           )}
         </div>
