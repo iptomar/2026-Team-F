@@ -1,29 +1,44 @@
 import React from 'react';
 
-// Wrapper para dar consistência a todos os campos do formulário
 const FieldWrapper = ({ label, required, children, error }) => (
-  <div className="flex flex-col mb-6 p-4 bg-white border border-gray-200 rounded-lg hover:shadow-md transition-shadow">
-    <div className="flex items-center mb-2">
-      <label className="text-sm font-bold text-gray-700 uppercase tracking-wide">
-        {label} {required && <span className="text-red-500">*</span>}
+  <div className="flex flex-col p-4 bg-white border border-slate-200 rounded-2xl hover:border-indigo-200 hover:shadow-sm transition-all">
+    <div className="flex items-center justify-between gap-3 mb-3">
+      <label className="text-sm font-black text-slate-700 tracking-wide">
+        {label || 'Campo sem nome'}{' '}
+        {required && <span className="text-red-500">*</span>}
       </label>
+
+      {required && (
+        <span className="inline-flex items-center rounded-full bg-red-50 text-red-700 border border-red-100 px-2 py-0.5 text-[11px] font-bold">
+          Obrigatório
+        </span>
+      )}
     </div>
+
     {children}
-    {error && <p className="mt-1 text-xs text-red-500 font-medium">{error}</p>}
+
+    {error && (
+      <p className="mt-2 text-xs text-red-500 font-semibold">
+        {error}
+      </p>
+    )}
   </div>
 );
 
-// 1. Bloco de Texto / Título / Secção
 export const FormLabel = ({ value, description }) => (
-  <div className="mb-6 p-2 border-l-4 border-blue-500 bg-blue-50">
-    <h3 className="text-xl font-bold text-blue-900">
+  <div className="p-5 border border-blue-100 border-l-4 border-l-blue-500 bg-gradient-to-r from-blue-50 to-white rounded-2xl">
+    <h3 className="text-xl font-black text-blue-950">
       {value || 'Título da Secção'}
     </h3>
-    {description && <p className="text-sm text-blue-700 mt-1">{description}</p>}
+
+    {description && (
+      <p className="text-sm text-blue-700 mt-1 leading-relaxed">
+        {description}
+      </p>
+    )}
   </div>
 );
 
-// 2. Grupo de Radio Buttons
 export const FormRadioGroup = ({
   label,
   options = [],
@@ -36,25 +51,39 @@ export const FormRadioGroup = ({
   <FieldWrapper label={label} required={required} error={error}>
     <div className="space-y-2">
       {options.length > 0 ? (
-        options.map((opt, index) => (
-          <label
-            key={index}
-            className="flex items-center p-3 border rounded-md cursor-pointer hover:bg-gray-50 transition"
-          >
-            <input
-              type="radio"
-              name={label}
-              value={opt}
-              checked={value === opt}
-              onChange={() => onChange?.(opt)}
-              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-              disabled={!isPreview}
-            />
-            <span className="ml-3 text-gray-700">{opt}</span>
-          </label>
-        ))
+        options.map((opt, index) => {
+          const checked = value === opt;
+
+          return (
+            <label
+              key={index}
+              className={`flex items-center p-3 border rounded-xl transition-all ${
+                isPreview
+                  ? 'cursor-pointer hover:bg-indigo-50 hover:border-indigo-200'
+                  : 'cursor-not-allowed opacity-80'
+              } ${
+                checked
+                  ? 'bg-indigo-50 border-indigo-300'
+                  : 'bg-white border-slate-200'
+              }`}
+            >
+              <input
+                type="radio"
+                name={label}
+                value={opt}
+                checked={checked}
+                onChange={() => onChange?.(opt)}
+                className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-slate-300"
+                disabled={!isPreview}
+              />
+              <span className="ml-3 text-sm font-medium text-slate-700">
+                {opt}
+              </span>
+            </label>
+          );
+        })
       ) : (
-        <p className="text-xs italic text-gray-400">
+        <p className="text-xs italic text-slate-400 bg-slate-50 border border-slate-200 rounded-xl p-3">
           Nenhuma opção configurada.
         </p>
       )}
@@ -62,7 +91,6 @@ export const FormRadioGroup = ({
   </FieldWrapper>
 );
 
-// 3. Checkbox
 export const FormCheckbox = ({
   label,
   description,
@@ -73,19 +101,29 @@ export const FormCheckbox = ({
   onChange,
 }) => (
   <FieldWrapper label={label} required={required} error={error}>
-    <label className="flex items-start p-3 border rounded-md hover:bg-gray-50 transition cursor-pointer">
+    <label
+      className={`flex items-start p-3 border rounded-xl transition-all ${
+        isPreview
+          ? 'cursor-pointer hover:bg-emerald-50 hover:border-emerald-200'
+          : 'cursor-not-allowed opacity-80'
+      } ${
+        checked
+          ? 'bg-emerald-50 border-emerald-300'
+          : 'bg-white border-slate-200'
+      }`}
+    >
       <div className="flex items-center h-5">
         <input
           type="checkbox"
           checked={Boolean(checked)}
           onChange={onChange}
-          className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+          className="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-slate-300 rounded"
           disabled={!isPreview}
         />
       </div>
 
       <div className="ml-3 text-sm">
-        <span className="font-medium text-gray-700">
+        <span className="font-semibold text-slate-700">
           {description || 'Confirmar seleção'}
         </span>
       </div>
@@ -93,7 +131,6 @@ export const FormCheckbox = ({
   </FieldWrapper>
 );
 
-// 4. Dropdown
 export const FormDropdown = ({
   label,
   options = [],
@@ -107,10 +144,15 @@ export const FormDropdown = ({
     <select
       value={value || ''}
       onChange={onChange}
-      className="w-full p-3 border border-gray-300 rounded-md bg-white text-gray-700 hover:bg-gray-50 transition cursor-pointer focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+      className={`w-full p-3 border border-slate-200 rounded-xl bg-white text-slate-700 transition outline-none ${
+        isPreview
+          ? 'cursor-pointer hover:bg-slate-50 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500'
+          : 'cursor-not-allowed opacity-80'
+      }`}
       disabled={!isPreview}
     >
       <option value="">Selecione uma opção...</option>
+
       {options.length > 0 ? (
         options.map((opt, index) => (
           <option key={index} value={opt}>

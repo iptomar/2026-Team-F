@@ -73,6 +73,7 @@ function App() {
       setAuthUser(null);
       setSelectedFormId(null);
       setSelectedSubmissionId(null);
+      setSelectedTemplateId(null);
       setCurrentPage('home');
     }
   };
@@ -97,6 +98,7 @@ function App() {
   const handleViewSubmissions = () => {
     setCurrentPage('submissions');
     setSelectedSubmissionId(null);
+    setSelectedTemplateId(null);
   };
 
   const handleViewSubmissionDetail = (submissionId) => {
@@ -119,12 +121,30 @@ function App() {
     setCurrentPage('home');
   };
 
+  const navigateHomeSection = (sectionId) => {
+    const goToSection = () => {
+      const section = document.getElementById(sectionId);
+      section?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+
+    if (currentPage !== 'home') {
+      handleGoHome();
+      setTimeout(goToSection, 100);
+      return;
+    }
+
+    goToSection();
+  };
+
+  const isSubmissionsActive =
+    currentPage === 'submissions' || currentPage === 'submission_detail';
+
   if (isCheckingSession) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50 flex items-center justify-center">
+        <div className="text-center bg-white border border-slate-200 rounded-2xl shadow-sm px-10 py-8">
           <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
-          <p className="text-gray-600 mt-4">A validar sessão...</p>
+          <p className="text-slate-600 mt-4 font-medium">A validar sessão...</p>
         </div>
       </div>
     );
@@ -135,68 +155,90 @@ function App() {
   }
 
   return (
-    <div className="App min-h-screen bg-gray-50">
-      <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-200 px-6 py-4 flex flex-col gap-3">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-lg font-bold text-gray-800">
-              Ferramenta de Formulários
-            </h1>
-            <p className="text-sm text-gray-500">
-              Sessão iniciada como{' '}
-              <span className="font-semibold text-gray-700">
-                {authUser.name}
+    <div className="App min-h-screen bg-slate-50 text-slate-900">
+      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-xl border-b border-slate-200 shadow-sm">
+        <div className="px-5 sm:px-8 py-4 flex flex-col gap-4">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <button
+              type="button"
+              onClick={handleGoHome}
+              className="group flex items-center gap-3 text-left w-fit"
+              title="Voltar à página inicial"
+            >
+              <span className="h-11 w-11 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-sm group-hover:bg-indigo-700 group-hover:scale-105 transition-all">
+                📋
               </span>
-            </p>
-          </div>
 
-          <div className="flex items-center gap-3">
-            {currentPage !== 'home' && (
+              <span>
+                <span className="block text-lg font-black tracking-tight text-slate-900">
+                  Ferramenta de Formulários
+                </span>
+                <span className="block text-sm text-slate-500">
+                  Sessão iniciada como{' '}
+                  <strong className="text-slate-700">{authUser.name}</strong>
+                </span>
+              </span>
+            </button>
+
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
               <button
+                type="button"
                 onClick={handleGoHome}
-                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition"
+                className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all border ${
+                  currentPage === 'home'
+                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
+                    : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50 hover:border-slate-300'
+                }`}
               >
-                ← Voltar à Home
+                <span>🏠</span>
+                <span>Home</span>
               </button>
-            )}
 
-            <button
-              onClick={handleViewSubmissions}
-              className={`px-4 py-2 rounded-lg transition font-medium ${
-                currentPage === 'submissions' || currentPage === 'submission_detail'
-                  ? 'bg-indigo-600 text-white shadow-sm'
-                  : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200'
-              }`}
-            >
-              Ver Submissões
-            </button>
+              <button
+                type="button"
+                onClick={handleViewSubmissions}
+                className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all border ${
+                  isSubmissionsActive
+                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
+                    : 'bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100 hover:border-indigo-300'
+                }`}
+              >
+                <span>📄</span>
+                <span>Ver Submissões</span>
+              </button>
 
-            <button
-              onClick={handleLogout}
-              className="px-4 py-2 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-lg transition"
-            >
-              Terminar sessão
-            </button>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 hover:border-red-300 transition-all"
+              >
+                <span>🚪</span>
+                <span>Terminar sessão</span>
+              </button>
+            </div>
           </div>
-        </div>
 
-        {/* Navegação por âncoras — apenas na HomePage */}
-        {currentPage === 'home' && (
-          <nav className="flex items-center gap-6 border-t border-gray-100 pt-3 -mb-1">
-            <a href="#editor" className="text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors">
-              Criar
-            </a>
-            <a href="#templates" className="text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors">
-              Modelos
-            </a>
-            <a href="#drafts" className="text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors">
-              Rascunhos
-            </a>
-            <a href="#published" className="text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors">
-              Publicados
-            </a>
-          </nav>
-        )}
+          {currentPage === 'home' && (
+            <nav className="flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
+              {[
+                { id: 'editor', label: 'Criar', icon: '✨' },
+                { id: 'templates', label: 'Modelos', icon: '🧩' },
+                { id: 'drafts', label: 'Rascunhos', icon: '📝' },
+                { id: 'published', label: 'Publicados', icon: '✅' },
+              ].map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => navigateHomeSection(item.id)}
+                  className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-semibold text-slate-600 hover:text-indigo-700 hover:bg-indigo-50 transition-all"
+                >
+                  <span>{item.icon}</span>
+                  <span>{item.label}</span>
+                </button>
+              ))}
+            </nav>
+          )}
+        </div>
       </header>
 
       {currentPage === 'home' && (

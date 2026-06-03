@@ -11,8 +11,13 @@ import {
   FormDropdown,
 } from './DynamicElements';
 
-const PreviewModal = ({ isOpen, onClose, schema = [] }) => {
-  // Estado local apenas para demonstrar interatividade visual na preview
+const PreviewModal = ({
+  isOpen,
+  onClose,
+  schema = [],
+  formName = 'Pré-visualização do Formulário',
+  formDescription = '',
+}) => {
   const [previewData, setPreviewData] = useState({});
 
   if (!isOpen) {
@@ -24,6 +29,10 @@ const PreviewModal = ({ isOpen, onClose, schema = [] }) => {
       ...prev,
       [fieldId]: valor,
     }));
+  };
+
+  const clearPreview = () => {
+    setPreviewData({});
   };
 
   const renderField = (field) => {
@@ -79,57 +88,94 @@ const PreviewModal = ({ isOpen, onClose, schema = [] }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 p-4">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 backdrop-blur-sm p-4">
+      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden border border-slate-200">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between p-6 border-b border-slate-200 bg-gradient-to-r from-indigo-50 via-white to-slate-50">
+          <div className="flex items-start gap-4">
+            <span className="h-12 w-12 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-sm text-xl">
+              👁️
+            </span>
 
-        {/* Cabeçalho */}
-        <div className="flex justify-between items-center p-6 border-b border-gray-200 bg-white">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-800">
-              Modo de Pré-visualização
-            </h2>
-            <p className="text-sm text-gray-500 mt-1">
-              Visão do utilizador final. Interaja para testar o comportamento visual.
-            </p>
-          </div>
-
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-red-500 text-2xl"
-            type="button"
-          >
-            &times;
-          </button>
-        </div>
-
-        {/* Corpo — campos renderizados */}
-        <div className="flex-grow overflow-y-auto p-8 bg-gray-50">
-          <div className="max-w-2xl mx-auto bg-white p-8 border border-gray-200 rounded-lg shadow-sm">
-            {schema.length === 0 ? (
-              <p className="text-center text-gray-400">
-                Nenhum campo para mostrar.
+            <div>
+              <p className="text-xs font-black uppercase tracking-wide text-indigo-600 mb-1">
+                Modo de Pré-visualização
               </p>
-            ) : (
-              schema.map((field) => (
-                <div key={field.id} className="mb-6">
-                  {renderField(field)}
-                </div>
-              ))
-            )}
-          </div>
-        </div>
 
-        {/* Rodapé — apenas botão de fechar */}
-        <div className="p-4 border-t border-gray-200 bg-white flex justify-end">
+              <h2 className="text-2xl font-black text-slate-900">
+                {formName || 'Formulário sem nome'}
+              </h2>
+
+              <p className="text-sm text-slate-500 mt-1 max-w-2xl leading-relaxed">
+                {formDescription ||
+                  'Visão aproximada do utilizador final. Pode interagir com os campos para testar o comportamento visual.'}
+              </p>
+            </div>
+          </div>
+
           <button
-            type="button"
             onClick={onClose}
-            className="px-6 py-2 bg-gray-100 text-gray-700 font-semibold rounded-lg hover:bg-gray-200 transition-colors"
+            className="h-10 w-10 rounded-2xl bg-white border border-slate-200 text-slate-500 hover:text-red-600 hover:bg-red-50 hover:border-red-200 transition flex items-center justify-center text-xl font-black"
+            type="button"
+            title="Fechar preview"
           >
-            Fechar
+            ×
           </button>
         </div>
 
+        <div className="flex-grow overflow-y-auto p-6 lg:p-8 bg-slate-100">
+          <div className="max-w-3xl mx-auto">
+            <div className="bg-white p-6 lg:p-8 border border-slate-200 rounded-3xl shadow-sm">
+              {schema.length === 0 ? (
+                <div className="text-center py-16">
+                  <div className="mx-auto mb-5 h-16 w-16 rounded-3xl bg-slate-100 text-slate-400 flex items-center justify-center text-3xl">
+                    🧩
+                  </div>
+
+                  <h3 className="text-xl font-black text-slate-800 mb-2">
+                    Nenhum campo para mostrar
+                  </h3>
+
+                  <p className="text-sm text-slate-500">
+                    Adicione componentes no editor para visualizar o formulário.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {schema.map((field) => (
+                    <div key={field.id}>
+                      {renderField(field)}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="p-5 border-t border-slate-200 bg-white flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-xs text-slate-500">
+            Esta pré-visualização é apenas visual e não submete dados.
+          </p>
+
+          <div className="flex flex-wrap gap-2 justify-end">
+            <button
+              type="button"
+              onClick={clearPreview}
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-slate-100 text-slate-700 font-bold rounded-xl hover:bg-slate-200 transition-colors"
+            >
+              <span>🧹</span>
+              <span>Limpar simulação</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="inline-flex items-center gap-2 px-6 py-2.5 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors shadow-sm"
+            >
+              <span>Fechar</span>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -23,7 +23,6 @@ import Toolbar from "../components/Toolbar";
 import FieldCard from "../components/FieldCard";
 import Sidebar from "../components/Sidebar";
 
-
 // ======================================================
 // TIPOS DE CAMPOS DISPONÍVEIS
 // ======================================================
@@ -38,34 +37,23 @@ const FIELD_TYPES = {
 // COMPONENTE PRINCIPAL
 // ======================================================
 const FormEditor = ({ formId, onGoHome }) => {
-
-  // ======================================================
-  // ESTADOS
-  // ======================================================
-
-  // ID do formulário sendo editado (pode ser null para novo)
   const [currentFormId, setCurrentFormId] = useState(formId || null);
-
-  // Nome do formulário
   const [formName, setFormName] = useState('Meu Formulário');
-
-  // Descrição do formulário
   const [formDescription, setFormDescription] = useState('');
-
-  // Lista de campos do formulário
   const [fields, setFields] = useState([]);
-
-  // Campo atualmente em edição
   const [editingId, setEditingId] = useState(null);
-
-  // Dados temporários da edição
   const [editData, setEditData] = useState({});
-
-  // Estado da janela Preview
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
-
-  // Estado de carregamento
   const [isLoading, setIsLoading] = useState(false);
+
+  // Melhorias visuais sem alteração de schema/backend
+  const [showGrid, setShowGrid] = useState(false);
+  const [toast, setToast] = useState(null);
+
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3500);
+  };
 
   // ======================================================
   // CARREGAR FORMULÁRIO EXISTENTE
@@ -85,14 +73,13 @@ const FormEditor = ({ formId, onGoHome }) => {
           setCurrentFormId(formData.id);
           setFormName(formData.name);
           setFormDescription(formData.description || '');
-          
-          // Garante que os campos vindos do banco respeitam a ordenação guardada
+
           const camposOrdenados = formData.fields || [];
           camposOrdenados.sort((a, b) => (a.order || 0) - (b.order || 0));
           setFields(camposOrdenados);
         } catch (error) {
           console.error('Erro ao carregar formulário:', error);
-          alert(`Erro ao carregar rascunho: ${error.message}`);
+          showToast(`Erro ao carregar rascunho: ${error.message}`, 'error');
         } finally {
           setIsLoading(false);
         }
@@ -103,30 +90,25 @@ const FormEditor = ({ formId, onGoHome }) => {
   }, [formId]);
 
   // ======================================================
-  // REORDENAR CAMPO (HISTÓRIA #10)
+  // REORDENAR CAMPO
   // ======================================================
   const moverCampo = async (index, direcao) => {
     const novosCampos = [...fields];
     const novoIndex = direcao === 'cima' ? index - 1 : index + 1;
 
-    // Impede movimentos fora do limite do array
     if (novoIndex < 0 || novoIndex >= novosCampos.length) return;
 
-    // Troca os elementos de posição
     const temp = novosCampos[index];
     novosCampos[index] = novosCampos[novoIndex];
     novosCampos[novoIndex] = temp;
 
-    // Reatribui o valor correto de 'order' baseado na nova sequência do array
     const camposMapeados = novosCampos.map((campo, idx) => ({
       ...campo,
       order: idx + 1,
     }));
 
-    // Atualiza o estado na Interface imediatamente
     setFields(camposMapeados);
 
-    // Se o formulário já existir na BD, sincroniza a nova ordem automaticamente
     if (currentFormId) {
       try {
         const payload = {
@@ -149,27 +131,23 @@ const FormEditor = ({ formId, onGoHome }) => {
   };
 
   // ======================================================
-  // REORDENAR POR DRAG & DROP (HISTÓRIA #17) - ADICIONADO ADITIVAMENTE
+  // REORDENAR POR DRAG & DROP
   // ======================================================
   const reordenarCamposArrastados = async (draggedIndex, targetIndex) => {
     if (draggedIndex === targetIndex) return;
+    if (Number.isNaN(draggedIndex) || Number.isNaN(targetIndex)) return;
 
     const novosCampos = [...fields];
-    // Remove o componente da posição antiga
     const [campoMovido] = novosCampos.splice(draggedIndex, 1);
-    // Insere o componente na nova posição de destino
     novosCampos.splice(targetIndex, 0, campoMovido);
 
-    // Reatribui o valor correto de 'order' baseado na nova sequência consecutiva do array
     const camposMapeados = novosCampos.map((campo, idx) => ({
       ...campo,
       order: idx + 1,
     }));
 
-    // Atualiza o estado local para renderização imediata na tela
     setFields(camposMapeados);
 
-    // Se o formulário já existir na BD, sincroniza a nova ordem automaticamente por PATCH
     if (currentFormId) {
       try {
         const payload = {
@@ -197,11 +175,11 @@ const FormEditor = ({ formId, onGoHome }) => {
   const deleteField = (id) => {
     setFields(prevFields => {
       const filtrados = prevFields.filter(field => field.id !== id);
-      // Reajusta a ordem consecutiva após a remoção
       return filtrados.map((field, idx) => ({ ...field, order: idx + 1 }));
     });
-  };
 
+    showToast('Campo removido do formulário.', 'info');
+  };
 
   // ======================================================
   // INICIAR EDIÇÃO
@@ -210,7 +188,6 @@ const FormEditor = ({ formId, onGoHome }) => {
     setEditingId(field.id);
     setEditData({ ...field });
   };
-
 
   // ======================================================
   // GUARDAR ALTERAÇÕES
@@ -221,9 +198,10 @@ const FormEditor = ({ formId, onGoHome }) => {
         field.id === id ? editData : field
       )
     );
-    setEditingId(null);
-  };
 
+    setEditingId(null);
+    showToast('Campo atualizado com sucesso.');
+  };
 
   // ======================================================
   // CANCELAR EDIÇÃO
@@ -233,9 +211,8 @@ const FormEditor = ({ formId, onGoHome }) => {
     setEditData({});
   };
 
-
   // ======================================================
-  // ADICIONAR OPÇÃO RADIO
+  // OPÇÕES
   // ======================================================
   const addOption = () => {
     setEditData(prev => ({
@@ -247,30 +224,21 @@ const FormEditor = ({ formId, onGoHome }) => {
     }));
   };
 
-
-  // ======================================================
-  // REMOVER OPÇÃO RADIO
-  // ======================================================
   const removeOption = (index) => {
     setEditData(prev => ({
       ...prev,
-      options: prev.options.filter((_, i) => i !== index)
+      options: (prev.options || []).filter((_, i) => i !== index)
     }));
   };
 
-
-  // ======================================================
-  // ATUALIZAR OPÇÃO RADIO
-  // ======================================================
   const updateOption = (index, value) => {
     setEditData(prev => ({
       ...prev,
-      options: prev.options.map((opt, i) =>
+      options: (prev.options || []).map((opt, i) =>
         i === index ? value : opt
       )
     }));
   };
-
 
   // ======================================================
   // RENDERIZAR CAMPO
@@ -280,11 +248,29 @@ const FormEditor = ({ formId, onGoHome }) => {
       case FIELD_TYPES.LABEL:
         return <FormLabel value={field.label} />;
       case FIELD_TYPES.RADIO:
-        return <FormRadioGroup label={field.label} options={field.options} required={field.required} />;
+        return (
+          <FormRadioGroup
+            label={field.label}
+            options={field.options}
+            required={field.required}
+          />
+        );
       case FIELD_TYPES.CHECKBOX:
-        return <FormCheckbox label={field.label} description={field.label} required={field.required} />;
+        return (
+          <FormCheckbox
+            label={field.label}
+            description={field.label}
+            required={field.required}
+          />
+        );
       case FIELD_TYPES.DROPDOWN:
-        return <FormDropdown label={field.label} options={field.options} required={field.required} />;
+        return (
+          <FormDropdown
+            label={field.label}
+            options={field.options}
+            required={field.required}
+          />
+        );
       default:
         return null;
     }
@@ -302,9 +288,10 @@ const FormEditor = ({ formId, onGoHome }) => {
       options: (type === FIELD_TYPES.RADIO || type === FIELD_TYPES.DROPDOWN) ? ['Opção 1'] : [],
       order: fields.length + 1,
     };
-    setFields(prevFields => [...prevFields, newField]);
-  };
 
+    setFields(prevFields => [...prevFields, newField]);
+    showToast('Campo adicionado ao formulário.', 'success');
+  };
 
   // ======================================================
   // SALVAR FORMULÁRIO NO BANCO DE DADOS
@@ -318,7 +305,6 @@ const FormEditor = ({ formId, onGoHome }) => {
         status: status
       };
 
-      let response;
       let method = 'POST';
       let endpoint = 'http://localhost:3000/form-templates';
 
@@ -327,7 +313,7 @@ const FormEditor = ({ formId, onGoHome }) => {
         endpoint = `http://localhost:3000/form-templates/${currentFormId}`;
       }
 
-      response = await fetch(endpoint, {
+      const response = await fetch(endpoint, {
         method: method,
         headers: {
           'Content-Type': 'application/json'
@@ -341,35 +327,29 @@ const FormEditor = ({ formId, onGoHome }) => {
 
       const data = await response.json();
 
-      // Se é novo, guardar o ID retornado
       if (!currentFormId) {
         setCurrentFormId(data.id);
       }
 
-      alert(`Formulário ${status === 'draft' ? 'salvo como rascunho' : 'publicado'} com sucesso!`);
+      showToast(
+        `Formulário ${status === 'draft' ? 'guardado como rascunho' : 'publicado'} com sucesso!`,
+        'success'
+      );
+
       console.log('Resposta do servidor:', data);
     } catch (error) {
       console.error('Erro ao salvar formulário:', error);
-      alert(`Erro ao salvar: ${error.message}`);
+      showToast(`Erro ao salvar: ${error.message}`, 'error');
     }
   };
 
-
-  // ======================================================
-  // GUARDAR RASCUNHO
-  // ======================================================
   const handleSaveDraft = () => {
     saveFormToDatabase('draft');
   };
 
-
-  // ======================================================
-  // PUBLICAR FORMULÁRIO
-  // ======================================================
   const handlePublish = () => {
     saveFormToDatabase('published');
   };
-
 
   // ======================================================
   // APAGAR FORMULÁRIO
@@ -396,197 +376,244 @@ const FormEditor = ({ formId, onGoHome }) => {
           }
         } catch (error) {
           console.error('Erro ao apagar formulário:', error);
-          alert(`Erro ao apagar formulário: ${error.message}`);
+          showToast(`Erro ao apagar formulário: ${error.message}`, 'error');
         }
       }
     }
   };
 
+  const canvasGridStyle = showGrid
+    ? {
+        backgroundImage:
+          'linear-gradient(to right, rgba(99, 102, 241, 0.08) 1px, transparent 1px), linear-gradient(to bottom, rgba(99, 102, 241, 0.08) 1px, transparent 1px)',
+        backgroundSize: '24px 24px',
+      }
+    : {};
 
-  // ======================================================
-  // RENDER PRINCIPAL
-  // ======================================================
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-100">
-        <div className="text-center">
+      <div className="flex items-center justify-center min-h-screen bg-slate-100">
+        <div className="text-center bg-white border border-slate-200 rounded-2xl shadow-sm px-10 py-8">
           <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
-          <p className="text-gray-600 mt-4">A carregar formulário...</p>
+          <p className="text-slate-600 mt-4 font-medium">A carregar formulário...</p>
         </div>
       </div>
     );
   }
 
   return (
+    <div className="flex bg-slate-100 min-h-screen relative">
+      {toast && (
+        <div
+          className={`fixed top-24 right-6 z-[70] max-w-sm rounded-2xl border px-5 py-4 shadow-xl backdrop-blur-md ${
+            toast.type === 'error'
+              ? 'bg-red-50/95 border-red-200 text-red-800'
+              : toast.type === 'info'
+                ? 'bg-slate-50/95 border-slate-200 text-slate-800'
+                : 'bg-emerald-50/95 border-emerald-200 text-emerald-800'
+          }`}
+        >
+          <div className="flex items-start gap-3">
+            <span className="text-lg">
+              {toast.type === 'error' ? '❌' : toast.type === 'info' ? 'ℹ️' : '✅'}
+            </span>
+            <p className="text-sm font-semibold leading-relaxed">{toast.message}</p>
+          </div>
+        </div>
+      )}
 
-    <div className="flex bg-gray-100 min-h-screen">
-
-      {/* SIDEBAR */}
       <Sidebar
         addField={addField}
         FIELD_TYPES={FIELD_TYPES}
       />
 
-      {/* CONTEÚDO */}
       <div className="flex-1 flex flex-col min-h-screen">
+        <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-xl border-b border-slate-200 px-6 lg:px-8 py-4 shadow-sm">
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+            <div className="flex items-center gap-4">
+              {onGoHome && (
+                <button
+                  onClick={onGoHome}
+                  className="h-11 w-11 rounded-2xl bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900 transition flex items-center justify-center"
+                  title="Voltar à página inicial"
+                  type="button"
+                >
+                  ←
+                </button>
+              )}
 
-        {/* CABEÇALHO GLOBAL FIXO */}
-        <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-200 px-8 py-4 flex justify-between items-center">
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <h1 className="text-xl font-black text-slate-900 leading-tight">
+                    {formName || 'Novo Formulário'}
+                  </h1>
 
-          {/* Lado esquerdo — voltar + título */}
-          <div className="flex items-center gap-4">
-            {onGoHome && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100 px-2.5 py-1 text-xs font-bold">
+                    {currentFormId ? '📝 A editar' : '✨ Novo'}
+                  </span>
+                </div>
+
+                <p className="text-sm text-slate-500">
+                  Construa, organize e pré-visualize a estrutura do formulário.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-2 items-center">
               <button
-                onClick={onGoHome}
-                className="text-gray-400 hover:text-gray-700 transition"
-                title="Voltar à página inicial"
+                type="button"
+                onClick={() => setShowGrid((prev) => !prev)}
+                className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all border ${
+                  showGrid
+                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
+                    : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                }`}
+                title="Ativar ou desativar grelha visual"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
+                <span>▦</span>
+                <span>{showGrid ? 'Grelha ativa' : 'Mostrar grelha'}</span>
               </button>
-            )}
-            <div>
-              <h1 className="text-lg font-semibold text-gray-800 leading-tight">
-                {formName || 'Novo Formulário'}
-              </h1>
-              <p className="text-xs text-gray-400">
-                {currentFormId ? 'A editar rascunho' : 'Novo formulário'}
-              </p>
+
+              {currentFormId && (
+                <button
+                  onClick={handleDeleteForm}
+                  className="inline-flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 hover:bg-red-100 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all"
+                  type="button"
+                >
+                  <span>🗑️</span>
+                  <span>Apagar</span>
+                </button>
+              )}
+
+              <button
+                onClick={() => setIsPreviewOpen(!isPreviewOpen)}
+                className="inline-flex items-center gap-2 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all"
+                type="button"
+              >
+                <span>👁️</span>
+                <span>{isPreviewOpen ? 'Fechar Preview' : 'Ver Preview'}</span>
+              </button>
+
+              <button
+                onClick={handleSaveDraft}
+                className="inline-flex items-center gap-2 bg-slate-100 text-slate-800 hover:bg-slate-200 border border-slate-200 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all"
+                type="button"
+              >
+                <span>💾</span>
+                <span>Guardar Rascunho</span>
+              </button>
+
+              <button
+                onClick={handlePublish}
+                className="inline-flex items-center gap-2 bg-indigo-600 text-white hover:bg-indigo-700 px-5 py-2.5 rounded-xl text-sm font-bold shadow-sm hover:shadow-md transition-all"
+                type="button"
+              >
+                <span>🚀</span>
+                <span>Publicar</span>
+              </button>
+            </div>
+          </div>
+        </header>
+
+        <div className="flex-1 p-6 lg:p-10">
+          <div className="mb-6 bg-white border border-slate-200 rounded-2xl shadow-sm p-5">
+            <div className="grid grid-cols-1 gap-4">
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">
+                  Nome do formulário
+                </label>
+                <input
+                  type="text"
+                  value={formName}
+                  onChange={(e) => setFormName(e.target.value)}
+                  placeholder="Nome do formulário"
+                  className="px-4 py-3 w-full border border-slate-200 rounded-xl text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">
+                  Descrição
+                </label>
+                <textarea
+                  value={formDescription}
+                  onChange={(e) => setFormDescription(e.target.value)}
+                  placeholder="Descrição do formulário (opcional)"
+                  className="px-4 py-3 w-full border border-slate-200 rounded-xl text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none transition"
+                  rows="2"
+                />
+              </div>
             </div>
           </div>
 
-          {/* Lado direito — ações globais */}
-          <div className="flex gap-3 items-center">
-
-            {/* Apagar */}
-            {currentFormId && (
-              <button
-                onClick={handleDeleteForm}
-                className="text-red-500 hover:bg-red-50 px-3 py-2 rounded-lg text-sm font-medium transition"
-              >
-                Apagar
-              </button>
-            )}
-
-            {/* Ver Preview */}
-            <button
-              onClick={() => setIsPreviewOpen(!isPreviewOpen)}
-              className="bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 px-4 py-2 rounded-lg text-sm font-medium transition"
-            >
-              {isPreviewOpen ? 'Fechar Preview' : 'Ver Preview'}
-            </button>
-
-            {/* Guardar Rascunho */}
-            <button
-              onClick={handleSaveDraft}
-              className="bg-gray-100 text-gray-800 hover:bg-gray-200 px-4 py-2 rounded-lg text-sm font-medium transition"
-            >
-              Guardar Rascunho
-            </button>
-
-            {/* Publicar */}
-            <button
-              onClick={handlePublish}
-              className="bg-blue-600 text-white hover:bg-blue-700 px-5 py-2 rounded-lg text-sm font-semibold shadow-sm transition"
-            >
-              Publicar
-            </button>
-
-          </div>
-
-        </header>
-
-        {/* ÁREA DE EDIÇÃO */}
-        <div className="flex-1 p-10">
-
-          {/* CAMPO NOME DO FORMULÁRIO */}
-          <input
-            type="text"
-            value={formName}
-            onChange={(e) => setFormName(e.target.value)}
-            placeholder="Nome do formulário"
-            className="mb-4 px-4 py-2 w-full border border-gray-300 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
-
-          {/* CAMPO DESCRIÇÃO */}
-          <textarea
-            value={formDescription}
-            onChange={(e) => setFormDescription(e.target.value)}
-            placeholder="Descrição do formulário (opcional)"
-            className="mb-6 px-4 py-2 w-full border border-gray-300 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
-            rows="2"
-          />
-
-          {/* TOOLBAR — apenas inserção rápida de campos */}
           <Toolbar
             addField={addField}
             FIELD_TYPES={FIELD_TYPES}
           />
 
-          {/* CANVAS */}
-          <div className="border-2 border-dashed border-gray-300 bg-white rounded-2xl p-6 min-h-[400px] shadow-sm">
-
+          <div
+            className={`border-2 border-dashed rounded-3xl p-6 min-h-[460px] shadow-sm transition-all ${
+              showGrid
+                ? 'border-indigo-200 bg-white'
+                : 'border-slate-300 bg-white'
+            }`}
+            style={canvasGridStyle}
+          >
             {fields.length === 0 ? (
+              <div className="min-h-[360px] flex items-center justify-center">
+                <div className="text-center max-w-md bg-white/90 border border-slate-200 rounded-3xl px-10 py-12 shadow-sm">
+                  <div className="mx-auto mb-5 h-16 w-16 rounded-3xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-3xl">
+                    🧩
+                  </div>
 
-              <p className="text-gray-400 text-center mt-10">
-                Adicione componentes usando a Sidebar.
-              </p>
+                  <h2 className="text-xl font-black text-slate-800 mb-2">
+                    O formulário ainda está vazio
+                  </h2>
 
+                  <p className="text-sm text-slate-500 leading-relaxed">
+                    Use a sidebar ou a inserção rápida para adicionar o primeiro
+                    componente. Depois pode reordenar os campos por arrastamento.
+                  </p>
+                </div>
+              </div>
             ) : (
-
               <div className="space-y-4">
-
                 {fields.map((field, index) => (
-
                   <FieldCard
                     key={field.id}
                     field={field}
                     index={index}
                     totalFields={fields.length}
                     moverCampo={moverCampo}
-                    reordenarCamposArrastados={reordenarCamposArrastados} // Prop injetada estritamente aqui
-
+                    reordenarCamposArrastados={reordenarCamposArrastados}
                     editingId={editingId}
                     editData={editData}
                     setEditData={setEditData}
-
                     saveField={saveField}
                     cancelEditing={cancelEditing}
-
                     startEditing={startEditing}
                     deleteField={deleteField}
-
                     FIELD_TYPES={FIELD_TYPES}
-
                     updateOption={updateOption}
                     removeOption={removeOption}
                     addOption={addOption}
-
                     renderField={renderField}
                   />
-
                 ))}
-
               </div>
-
             )}
-
           </div>
 
-          {/* PREVIEW — apenas visualização, sem submissão */}
           <PreviewModal
             isOpen={isPreviewOpen}
             onClose={() => setIsPreviewOpen(false)}
             schema={fields}
+            formName={formName}
+            formDescription={formDescription}
           />
-
         </div>
-
       </div>
-
     </div>
-
   );
 };
 
