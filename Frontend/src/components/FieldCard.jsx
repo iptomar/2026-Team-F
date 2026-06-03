@@ -1,4 +1,20 @@
 import React, { useState } from "react";
+import {
+  CheckSquare,
+  ChevronDown,
+  CircleDot,
+  CirclePlus,
+  Edit3,
+  GripVertical,
+  MoveDown,
+  MoveUp,
+  MoreHorizontal,
+  Save,
+  Trash2,
+  Type,
+  Undo2,
+  X,
+} from "lucide-react";
 
 const FieldCard = ({
   field,
@@ -17,51 +33,62 @@ const FieldCard = ({
   updateOption,
   removeOption,
   addOption,
-  renderField
+  renderField,
 }) => {
   const [isDragOver, setIsDragOver] = useState(false);
+  const [isActionsOpen, setIsActionsOpen] = useState(false);
 
   const fieldMeta = {
     [FIELD_TYPES.LABEL]: {
-      icon: "📝",
+      icon: Type,
       label: "Label",
       badge: "bg-blue-50 text-blue-700 border-blue-200",
+      iconBox: "bg-blue-50 text-blue-700 border-blue-100",
     },
     [FIELD_TYPES.RADIO]: {
-      icon: "🔘",
+      icon: CircleDot,
       label: "Radio",
       badge: "bg-emerald-50 text-emerald-700 border-emerald-200",
+      iconBox: "bg-emerald-50 text-emerald-700 border-emerald-100",
     },
     [FIELD_TYPES.CHECKBOX]: {
-      icon: "☑️",
+      icon: CheckSquare,
       label: "Checkbox",
       badge: "bg-purple-50 text-purple-700 border-purple-200",
+      iconBox: "bg-purple-50 text-purple-700 border-purple-100",
     },
     [FIELD_TYPES.DROPDOWN]: {
-      icon: "🔽",
+      icon: ChevronDown,
       label: "Dropdown",
       badge: "bg-orange-50 text-orange-700 border-orange-200",
+      iconBox: "bg-orange-50 text-orange-700 border-orange-100",
     },
   };
 
   const meta = fieldMeta[field.type] || {
-    icon: "🧩",
+    icon: CirclePlus,
     label: field.type,
     badge: "bg-slate-50 text-slate-700 border-slate-200",
+    iconBox: "bg-slate-50 text-slate-700 border-slate-200",
   };
 
-  const handleDragStart = (e) => {
-    e.dataTransfer.setData("text/plain", index);
-    e.currentTarget.style.opacity = "0.55";
+  const Icon = meta.icon;
+
+  const handleDragStart = (event) => {
+    event.dataTransfer.setData("text/plain", index);
+    event.dataTransfer.effectAllowed = "move";
+    event.currentTarget.style.opacity = "0.55";
   };
 
-  const handleDragEnd = (e) => {
-    e.currentTarget.style.opacity = "1";
+  const handleDragEnd = (event) => {
+    event.currentTarget.style.opacity = "1";
     setIsDragOver(false);
   };
 
-  const handleDragOver = (e) => {
-    e.preventDefault();
+  const handleDragOver = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+
     if (editingId !== field.id) {
       setIsDragOver(true);
     }
@@ -71,17 +98,23 @@ const FieldCard = ({
     setIsDragOver(false);
   };
 
-  const handleDrop = (e) => {
-    e.preventDefault();
+  const handleDrop = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
     setIsDragOver(false);
 
-    const draggedIndex = Number(e.dataTransfer.getData("text/plain"));
+    const draggedIndex = Number(event.dataTransfer.getData("text/plain"));
 
     if (Number.isNaN(draggedIndex)) {
       return;
     }
 
     reordenarCamposArrastados(draggedIndex, index);
+  };
+
+  const handleStartEditing = () => {
+    setIsActionsOpen(false);
+    startEditing(field);
   };
 
   return (
@@ -92,7 +125,7 @@ const FieldCard = ({
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      className={`bg-white border rounded-3xl shadow-sm p-5 transition-all ${
+      className={`group bg-white border rounded-3xl shadow-sm transition-all ${
         editingId !== field.id ? "cursor-grab active:cursor-grabbing" : ""
       } ${
         isDragOver
@@ -101,60 +134,77 @@ const FieldCard = ({
       }`}
     >
       {editingId === field.id ? (
-        <div className="space-y-5">
+        <div className="p-5 space-y-5">
           <div className="flex items-center justify-between border-b border-slate-100 pb-4">
             <div className="flex items-center gap-3">
-              <span className="h-11 w-11 rounded-2xl bg-indigo-50 text-indigo-700 flex items-center justify-center">
-                ✏️
+              <span className={`h-11 w-11 rounded-2xl border flex items-center justify-center ${meta.iconBox}`}>
+                <Icon size={20} />
               </span>
 
               <div>
                 <h3 className="font-black text-slate-900">
-                  Editar campo
+                  Editar {meta.label}
                 </h3>
                 <p className="text-xs text-slate-500">
-                  Ajuste a identificação e opções do componente.
+                  Ajuste apenas as propriedades aplicáveis a este componente.
                 </p>
               </div>
             </div>
 
-            <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full border text-xs font-bold ${meta.badge}`}>
-              <span>{meta.icon}</span>
-              <span>{meta.label}</span>
-            </span>
+            <button
+              type="button"
+              onClick={cancelEditing}
+              className="h-9 w-9 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900 inline-flex items-center justify-center transition"
+              title="Fechar edição"
+            >
+              <X size={17} />
+            </button>
           </div>
 
           <div>
             <label className="block text-sm font-black text-slate-700 mb-2">
-              Nome do Campo
+              {field.type === FIELD_TYPES.LABEL ? "Texto da label" : "Nome do campo"}
             </label>
+
             <input
               type="text"
               value={editData.label || ""}
-              onChange={(e) => setEditData({ ...editData, label: e.target.value })}
+              onChange={(event) =>
+                setEditData({ ...editData, label: event.target.value })
+              }
               className="w-full border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
-              placeholder="Nome do campo"
+              placeholder={
+                field.type === FIELD_TYPES.LABEL
+                  ? "Texto apresentado na label"
+                  : "Nome do campo"
+              }
             />
           </div>
 
-          <label className="flex items-center gap-3 bg-slate-50 border border-slate-200 p-4 rounded-2xl cursor-pointer hover:bg-slate-100 transition">
-            <input
-              type="checkbox"
-              checked={editData.required || false}
-              onChange={(e) => setEditData({ ...editData, required: e.target.checked })}
-              className="w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500"
-            />
-            <span>
-              <span className="block text-sm font-bold text-slate-800">
-                Campo obrigatório
-              </span>
-              <span className="block text-xs text-slate-500">
-                O utilizador terá de preencher este campo antes de submeter.
-              </span>
-            </span>
-          </label>
+          {field.type !== FIELD_TYPES.LABEL && (
+            <label className="flex items-center gap-3 bg-slate-50 border border-slate-200 p-4 rounded-2xl cursor-pointer hover:bg-slate-100 transition">
+              <input
+                type="checkbox"
+                checked={editData.required || false}
+                onChange={(event) =>
+                  setEditData({ ...editData, required: event.target.checked })
+                }
+                className="w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500"
+              />
 
-          {(editData.type === FIELD_TYPES.RADIO || editData.type === FIELD_TYPES.DROPDOWN) && (
+              <span>
+                <span className="block text-sm font-bold text-slate-800">
+                  Campo obrigatório
+                </span>
+                <span className="block text-xs text-slate-500">
+                  O utilizador terá de preencher este campo antes de submeter.
+                </span>
+              </span>
+            </label>
+          )}
+
+          {(editData.type === FIELD_TYPES.RADIO ||
+            editData.type === FIELD_TYPES.DROPDOWN) && (
             <div>
               <label className="block text-sm font-black text-slate-700 mb-2">
                 Opções
@@ -166,7 +216,9 @@ const FieldCard = ({
                     <input
                       type="text"
                       value={opt}
-                      onChange={(e) => updateOption(indexOpt, e.target.value)}
+                      onChange={(event) =>
+                        updateOption(indexOpt, event.target.value)
+                      }
                       className="flex-1 border border-slate-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
                       placeholder={`Opção ${indexOpt + 1}`}
                     />
@@ -177,7 +229,7 @@ const FieldCard = ({
                       className="bg-red-50 border border-red-200 text-red-700 px-3 rounded-xl hover:bg-red-100 transition font-bold"
                       title="Remover opção"
                     >
-                      ✕
+                      <X size={16} />
                     </button>
                   </div>
                 ))}
@@ -188,8 +240,8 @@ const FieldCard = ({
                 onClick={addOption}
                 className="mt-3 inline-flex items-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-2 rounded-xl hover:bg-emerald-100 transition font-bold text-sm"
               >
-                <span>➕</span>
-                <span>Adicionar Opção</span>
+                <CirclePlus size={16} />
+                <span>Adicionar opção</span>
               </button>
             </div>
           )}
@@ -200,7 +252,7 @@ const FieldCard = ({
               onClick={() => saveField(field.id)}
               className="inline-flex items-center gap-2 bg-indigo-600 text-white px-5 py-2.5 rounded-xl hover:bg-indigo-700 font-bold transition"
             >
-              <span>💾</span>
+              <Save size={17} />
               <span>Guardar</span>
             </button>
 
@@ -209,26 +261,28 @@ const FieldCard = ({
               onClick={cancelEditing}
               className="inline-flex items-center gap-2 bg-slate-100 text-slate-700 border border-slate-200 px-5 py-2.5 rounded-xl hover:bg-slate-200 font-bold transition"
             >
-              <span>↩️</span>
+              <Undo2 size={17} />
               <span>Cancelar</span>
             </button>
           </div>
         </div>
       ) : (
-        <>
-          <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between mb-4">
-            <div className="flex items-start gap-3">
-              <span
-                className="mt-1 h-10 w-10 rounded-2xl bg-slate-50 border border-slate-200 text-slate-400 flex items-center justify-center select-none cursor-grab"
-                title="Arraste para reordenar"
+        <div className="p-4">
+          <div className="flex items-center justify-between gap-3 mb-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <button
+                type="button"
+                onClick={() => setIsActionsOpen((previous) => !previous)}
+                className={`h-11 w-11 rounded-2xl border flex items-center justify-center shrink-0 hover:scale-105 transition ${meta.iconBox}`}
+                title={`Opções de ${meta.label}`}
               >
-                ⋮⋮
-              </span>
+                <Icon size={21} />
+              </button>
 
-              <div>
-                <div className="flex flex-wrap items-center gap-2 mb-1">
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
                   <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-black ${meta.badge}`}>
-                    <span>{meta.icon}</span>
+                    <Icon size={13} />
                     <span>{meta.label}</span>
                   </span>
 
@@ -244,59 +298,81 @@ const FieldCard = ({
                   )}
                 </div>
 
-                <p className="text-sm text-slate-500">
-                  Arraste o cartão ou use os controlos para ajustar a ordem.
+                <p className="text-xs text-slate-500 mt-1 truncate">
+                  {field.label || "Campo sem nome"}
                 </p>
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-2 items-center">
-              <button
-                type="button"
-                onClick={() => moverCampo(index, 'cima')}
-                disabled={index === 0}
-                title="Mover para cima"
-                className="h-9 w-9 bg-indigo-50 text-indigo-600 rounded-xl hover:bg-indigo-100 disabled:opacity-30 disabled:hover:bg-indigo-50 font-black transition-all text-sm"
+            <div className="flex items-center gap-2">
+              <span
+                className="h-9 w-9 rounded-xl bg-slate-50 border border-slate-200 text-slate-400 flex items-center justify-center select-none"
+                title="Arraste para reordenar"
               >
-                ↑
-              </button>
+                <GripVertical size={18} />
+              </span>
 
               <button
                 type="button"
-                onClick={() => moverCampo(index, 'baixo')}
-                disabled={index === totalFields - 1}
-                title="Mover para baixo"
-                className="h-9 w-9 bg-indigo-50 text-indigo-600 rounded-xl hover:bg-indigo-100 disabled:opacity-30 disabled:hover:bg-indigo-50 font-black transition-all text-sm"
+                onClick={() => setIsActionsOpen((previous) => !previous)}
+                className="h-9 w-9 rounded-xl bg-slate-50 border border-slate-200 text-slate-500 hover:bg-slate-100 hover:text-slate-800 inline-flex items-center justify-center transition"
+                title="Mostrar opções"
               >
-                ↓
-              </button>
-
-              <div className="w-[1px] bg-slate-200 h-6 mx-1"></div>
-
-              <button
-                type="button"
-                onClick={() => startEditing(field)}
-                className="inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 border border-blue-100 px-3 py-2 rounded-xl hover:bg-blue-100 transition-all text-sm font-bold"
-              >
-                <span>✏️</span>
-                <span>Editar</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => deleteField(field.id)}
-                className="inline-flex items-center gap-1.5 bg-red-50 text-red-700 border border-red-100 px-3 py-2 rounded-xl hover:bg-red-100 transition-all text-sm font-bold"
-              >
-                <span>🗑️</span>
-                <span>Remover</span>
+                <MoreHorizontal size={18} />
               </button>
             </div>
           </div>
 
+          {isActionsOpen && (
+            <div className="mb-3 rounded-2xl border border-slate-200 bg-slate-50 p-3 flex flex-wrap gap-2 items-center justify-between">
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => moverCampo(index, "cima")}
+                  disabled={index === 0}
+                  title="Mover para cima"
+                  className="h-9 w-9 inline-flex items-center justify-center bg-white border border-slate-200 text-indigo-600 rounded-xl hover:bg-indigo-50 disabled:opacity-30 disabled:hover:bg-white font-black transition-all text-sm"
+                >
+                  <MoveUp size={16} />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => moverCampo(index, "baixo")}
+                  disabled={index === totalFields - 1}
+                  title="Mover para baixo"
+                  className="h-9 w-9 inline-flex items-center justify-center bg-white border border-slate-200 text-indigo-600 rounded-xl hover:bg-indigo-50 disabled:opacity-30 disabled:hover:bg-white font-black transition-all text-sm"
+                >
+                  <MoveDown size={16} />
+                </button>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={handleStartEditing}
+                  className="inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 border border-blue-100 px-3 py-2 rounded-xl hover:bg-blue-100 transition-all text-sm font-bold"
+                >
+                  <Edit3 size={15} />
+                  <span>Editar</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => deleteField(field.id)}
+                  className="inline-flex items-center gap-1.5 bg-red-50 text-red-700 border border-red-100 px-3 py-2 rounded-xl hover:bg-red-100 transition-all text-sm font-bold"
+                >
+                  <Trash2 size={15} />
+                  <span>Remover</span>
+                </button>
+              </div>
+            </div>
+          )}
+
           <div className="rounded-2xl border border-slate-100 bg-slate-50/60 p-4">
             {renderField(field)}
           </div>
-        </>
+        </div>
       )}
     </div>
   );
