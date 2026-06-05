@@ -32,6 +32,20 @@ const STATUS_CONFIG = {
     border: 'border-blue-200',
     dot: 'bg-blue-400',
   },
+  in_progress: {
+    label: 'Em Progresso',
+    bg: 'bg-amber-50',
+    text: 'text-amber-700',
+    border: 'border-amber-200',
+    dot: 'bg-amber-400',
+  },
+  completed: {
+    label: 'Concluída',
+    bg: 'bg-emerald-50',
+    text: 'text-emerald-700',
+    border: 'border-emerald-200',
+    dot: 'bg-emerald-400',
+  },
 };
 
 const getStatusConfig = (status) =>
@@ -69,6 +83,8 @@ const SubmissionDetailPage = ({ submissionId, onBack }) => {
   const [template, setTemplate] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [history, setHistory] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(true);
 
   // ======================================================
   // FETCH DE DADOS (submissão → template associado)
@@ -108,6 +124,36 @@ const SubmissionDetailPage = ({ submissionId, onBack }) => {
 
     if (submissionId) {
       fetchDetail();
+    }
+  }, [submissionId]);
+
+  // ======================================================
+  // FETCH DO HISTÓRICO DE TRANSIÇÕES DE ESTADO
+  // ======================================================
+  useEffect(() => {
+    const fetchHistory = async () => {
+      try {
+        setHistoryLoading(true);
+        const res = await fetch(
+          `http://localhost:3000/form-submissions/${submissionId}/history`
+        );
+        if (!res.ok) {
+          console.error('Erro ao buscar histórico:', res.statusText);
+          setHistory([]);
+          return;
+        }
+        const data = await res.json();
+        setHistory(data);
+      } catch (err) {
+        console.error('Erro ao carregar histórico:', err);
+        setHistory([]);
+      } finally {
+        setHistoryLoading(false);
+      }
+    };
+
+    if (submissionId) {
+      fetchHistory();
     }
   }, [submissionId]);
 
@@ -348,6 +394,105 @@ const SubmissionDetailPage = ({ submissionId, onBack }) => {
                 </p>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Histórico de Estados */}
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden mb-8">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <div className="flex items-center gap-2">
+              <svg className="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <h3 className="text-lg font-bold text-gray-800">
+                Histórico de Estados
+              </h3>
+            </div>
+            <p className="text-sm text-gray-500 mt-0.5">
+              Registo cronológico das transições de estado desta submissão
+            </p>
+          </div>
+
+          <div className="px-6 py-5">
+            {historyLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600"></div>
+                <span className="ml-3 text-sm text-gray-500">A carregar histórico...</span>
+              </div>
+            ) : history.length === 0 ? (
+              <div className="text-center py-8">
+                <svg className="mx-auto w-10 h-10 text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+                <p className="text-gray-400 text-sm">Ainda não existem transições de estado.</p>
+              </div>
+            ) : (
+              <div className="relative">
+                {/* Linha vertical da timeline */}
+                <div className="absolute left-[15px] top-2 bottom-2 w-0.5 bg-gradient-to-b from-indigo-200 via-indigo-100 to-transparent"></div>
+
+                <div className="space-y-6">
+                  {history.map((entry, index) => {
+                    const prevCfg = getStatusConfig(entry.previous_status);
+                    const newCfg = getStatusConfig(entry.new_status);
+                    const isLast = index === history.length - 1;
+
+                    return (
+                      <div key={entry.id || index} className="relative flex gap-4">
+                        {/* Círculo da timeline */}
+                        <div className="relative z-10 flex-shrink-0">
+                          <div className={`w-[30px] h-[30px] rounded-full border-2 border-white shadow-sm flex items-center justify-center ${
+                            isLast ? 'bg-indigo-500' : 'bg-indigo-100'
+                          }`}>
+                            <svg className={`w-3.5 h-3.5 ${isLast ? 'text-white' : 'text-indigo-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                            </svg>
+                          </div>
+                        </div>
+
+                        {/* Conteúdo da entrada */}
+                        <div className={`flex-1 rounded-xl p-4 transition-colors ${
+                          isLast
+                            ? 'bg-gradient-to-r from-indigo-50 to-blue-50 border border-indigo-100'
+                            : 'bg-gray-50 border border-gray-100 hover:bg-gray-100'
+                        }`}>
+                          {/* Badges de transição */}
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold border ${prevCfg.bg} ${prevCfg.text} ${prevCfg.border}`}>
+                              <span className={`w-1.5 h-1.5 rounded-full ${prevCfg.dot}`}></span>
+                              {prevCfg.label}
+                            </span>
+                            <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                            </svg>
+                            <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold border ${newCfg.bg} ${newCfg.text} ${newCfg.border}`}>
+                              <span className={`w-1.5 h-1.5 rounded-full ${newCfg.dot}`}></span>
+                              {newCfg.label}
+                            </span>
+                          </div>
+
+                          {/* Meta-informação: data e responsável */}
+                          <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                            <span className="inline-flex items-center gap-1">
+                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                              {formatDate(entry.changed_at)}
+                            </span>
+                            <span className="inline-flex items-center gap-1">
+                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                              </svg>
+                              {entry.changed_by || 'Sistema'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
