@@ -158,6 +158,53 @@ const formatAutosaveDate = (isoDate) => {
   }
 };
 
+const fieldTypeUsesOptions = (type) => {
+  return type === FIELD_TYPES.RADIO || type === FIELD_TYPES.DROPDOWN;
+};
+
+const normalizeFieldForDatabase = (field, index) => {
+  const normalizedField = {
+    ...field,
+    id: typeof field.id === 'string' && field.id.trim().length > 0
+      ? field.id
+      : crypto.randomUUID(),
+    label: typeof field.label === 'string' && field.label.trim().length > 0
+      ? field.label
+      : `Novo campo de ${field.type || 'campo'}`,
+    required: Boolean(field.required),
+    order: typeof field.order === 'number' ? field.order : index + 1,
+  };
+
+  if (fieldTypeUsesOptions(normalizedField.type)) {
+    normalizedField.options = Array.isArray(field.options)
+      ? field.options
+          .filter((option) => option !== undefined && option !== null)
+          .map((option) => String(option).trim())
+          .filter((option) => option.length > 0)
+      : [];
+  } else {
+    delete normalizedField.options;
+  }
+
+  if (Array.isArray(field.fields)) {
+    normalizedField.fields = field.fields.map((childField, childIndex) =>
+      normalizeFieldForDatabase(childField, childIndex)
+    );
+  }
+
+  return normalizedField;
+};
+
+const normalizeFieldsForDatabase = (fieldsToNormalize) => {
+  if (!Array.isArray(fieldsToNormalize)) {
+    return [];
+  }
+
+  return fieldsToNormalize.map((field, index) =>
+    normalizeFieldForDatabase(field, index)
+  );
+};
+
 // ======================================================
 // COMPONENTE PRINCIPAL
 // ======================================================
@@ -723,10 +770,12 @@ const FormEditor = ({ formId, onGoHome }) => {
   // ======================================================
   const saveFormToDatabase = async (status) => {
     try {
+      const normalizedFields = normalizeFieldsForDatabase(fields);
+
       const payload = {
         name: formName,
         description: formDescription,
-        fields,
+        fields: normalizedFields,
         status,
       };
 
@@ -738,6 +787,8 @@ const FormEditor = ({ formId, onGoHome }) => {
         endpoint = `http://localhost:3000/form-templates/${currentFormId}`;
       }
 
+      console.log('Payload enviado para guardar formulário:', payload);
+
       const response = await fetch(endpoint, {
         method,
         headers: {
@@ -747,10 +798,28 @@ const FormEditor = ({ formId, onGoHome }) => {
       });
 
       if (!response.ok) {
-        throw new Error(`Erro ao salvar: ${response.statusText}`);
+        let errorMessage = `Erro ao salvar: ${response.statusText}`;
+
+        try {
+          const errorData = await response.json();
+
+          if (errorData?.error) {
+            errorMessage = errorData.error;
+          }
+        } catch {
+          const errorText = await response.text().catch(() => '');
+
+          if (errorText) {
+            errorMessage = errorText;
+          }
+        }
+
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
+
+      setFields(normalizedFields);
 
       if (!currentFormId) {
         setCurrentFormId(data.id);

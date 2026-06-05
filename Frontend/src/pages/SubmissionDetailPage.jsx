@@ -296,9 +296,19 @@ const SubmissionDetailPage = ({ submissionId, onBack }) => {
   answerableFields.forEach((field) => {
     if (field.section !== currentSection) {
       currentSection = field.section;
-      groupedFields.push({ type: 'section', label: currentSection });
+
+      if (currentSection) {
+        groupedFields.push({
+          rowType: 'section',
+          label: currentSection,
+        });
+      }
     }
-    groupedFields.push({ type: 'field', ...field });
+
+    groupedFields.push({
+      rowType: 'field',
+      ...field,
+    });
   });
 
   // ======================================================
@@ -516,7 +526,7 @@ const SubmissionDetailPage = ({ submissionId, onBack }) => {
             <div className="divide-y divide-gray-100">
               {groupedFields.map((item, index) => {
                 // Cabeçalho de secção
-                if (item.type === 'section' && item.label) {
+                if (item.rowType === 'section' && item.label) {
                   return (
                     <div
                       key={`section-${index}`}
@@ -529,7 +539,7 @@ const SubmissionDetailPage = ({ submissionId, onBack }) => {
                   );
                 }
 
-                if (item.type !== 'field') return null;
+                if (item.rowType !== 'field') return null;
 
                 const answer = submissionData[item.id];
                 return (
