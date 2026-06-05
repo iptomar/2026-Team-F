@@ -1,5 +1,8 @@
 import { Request, Response } from "express";
-import { FormTemplateService } from "../services/formTemplateService";
+import {
+  FormTemplateService,
+  INVALID_WORKFLOW_ASSOCIATION_ERROR,
+} from "../services/formTemplateService";
 import {
   FormFieldType,
   FormTemplateStatus,
@@ -57,6 +60,48 @@ function validateStatus(status: unknown): string | null {
   }
 
   return null;
+}
+
+function parseWorkflowId(
+  workflowId: unknown,
+  allowUndefined = true
+): { workflowId?: string | null; error?: string } {
+  if (workflowId === undefined) {
+    if (allowUndefined) {
+      return { workflowId: undefined };
+    }
+
+    return {
+      error: "O campo 'workflow_id' é obrigatório.",
+    };
+  }
+
+  if (workflowId === null) {
+    return { workflowId: null };
+  }
+
+  if (typeof workflowId !== "string") {
+    return {
+      error: "O campo 'workflow_id' deve ser string ou null.",
+    };
+  }
+
+  const trimmedWorkflowId = workflowId.trim();
+
+  if (trimmedWorkflowId.length === 0) {
+    return {
+      error: "O campo 'workflow_id' não pode ser vazio.",
+    };
+  }
+
+  return { workflowId: trimmedWorkflowId };
+}
+
+function isInvalidWorkflowAssociationError(error: unknown): boolean {
+  return (
+    error instanceof Error &&
+    error.message === INVALID_WORKFLOW_ASSOCIATION_ERROR
+  );
 }
 
 function isObjectRecord(value: unknown): value is Record<string, unknown> {
@@ -265,6 +310,12 @@ export class FormTemplateController {
         return;
       }
 
+      const workflowIdResult = parseWorkflowId(workflow_id);
+      if (workflowIdResult.error) {
+        res.status(400).json({ error: workflowIdResult.error });
+        return;
+      }
+
       const fieldsError = validateFields(fields);
       if (fieldsError) {
         res.status(400).json({ error: fieldsError });
@@ -276,12 +327,19 @@ export class FormTemplateController {
         description: description ?? undefined,
         status,
         fields: fields ?? [],
-        workflow_id: workflow_id ?? null,
+        workflow_id: workflowIdResult.workflowId ?? null,
         created_by: created_by ?? undefined,
       });
 
       res.status(201).json(template);
     } catch (error) {
+      if (isInvalidWorkflowAssociationError(error)) {
+        res.status(400).json({
+          error: "Workflow indicado não existe ou está inativo.",
+        });
+        return;
+      }
+
       console.error("Erro ao criar template:", error);
       res.status(500).json({ error: "Erro interno ao criar template." });
     }
@@ -356,6 +414,12 @@ export class FormTemplateController {
         return;
       }
 
+      const workflowIdResult = parseWorkflowId(workflow_id);
+      if (workflowIdResult.error) {
+        res.status(400).json({ error: workflowIdResult.error });
+        return;
+      }
+
       const fieldsError = validateFields(fields);
       if (fieldsError) {
         res.status(400).json({ error: fieldsError });
@@ -367,7 +431,8 @@ export class FormTemplateController {
         description: description !== undefined ? description : undefined,
         status,
         fields,
-        workflow_id,
+        workflow_id:
+          workflow_id !== undefined ? workflowIdResult.workflowId : undefined,
         is_active,
       });
 
@@ -378,6 +443,13 @@ export class FormTemplateController {
 
       res.json(updated);
     } catch (error) {
+      if (isInvalidWorkflowAssociationError(error)) {
+        res.status(400).json({
+          error: "Workflow indicado não existe ou está inativo.",
+        });
+        return;
+      }
+
       console.error("Erro ao atualizar template:", error);
       res.status(500).json({ error: "Erro interno ao atualizar template." });
     }
@@ -391,14 +463,16 @@ export class FormTemplateController {
       const { id } = req.params;
       const { workflow_id } = req.body;
 
-      if (workflow_id !== null && typeof workflow_id !== "string") {
-        res.status(400).json({
-          error: "O campo 'workflow_id' deve ser string ou null.",
-        });
+      const workflowIdResult = parseWorkflowId(workflow_id, false);
+      if (workflowIdResult.error) {
+        res.status(400).json({ error: workflowIdResult.error });
         return;
       }
 
-      const updated = await service.associateWorkflow(id, workflow_id);
+      const updated = await service.associateWorkflow(
+        id,
+        workflowIdResult.workflowId ?? null
+      );
 
       if (!updated) {
         res.status(404).json({ error: "Template não encontrado." });
@@ -407,6 +481,13 @@ export class FormTemplateController {
 
       res.json(updated);
     } catch (error) {
+      if (isInvalidWorkflowAssociationError(error)) {
+        res.status(400).json({
+          error: "Workflow indicado não existe ou está inativo.",
+        });
+        return;
+      }
+
       console.error("Erro ao associar workflow:", error);
       res.status(500).json({ error: "Erro interno ao associar workflow." });
     }

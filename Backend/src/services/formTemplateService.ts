@@ -5,6 +5,7 @@ import {
   FormTemplateStatus,
   FormFieldDefinition,
 } from "../models/FormTemplate";
+import { Workflow } from "../models/Workflow";
 
 interface CreateFormTemplateInput {
   name: string;
@@ -24,12 +25,21 @@ interface UpdateFormTemplateInput {
   is_active?: boolean;
 }
 
+export const INVALID_WORKFLOW_ASSOCIATION_ERROR =
+  "INVALID_WORKFLOW_ASSOCIATION";
+
 export class FormTemplateService {
   private get repository(): Repository<FormTemplate> {
     return AppDataSource.getRepository(FormTemplate);
   }
 
+  private get workflowRepository(): Repository<Workflow> {
+    return AppDataSource.getRepository(Workflow);
+  }
+
   async create(data: CreateFormTemplateInput): Promise<FormTemplate> {
+    await this.ensureWorkflowCanBeAssociated(data.workflow_id);
+
     const template = this.repository.create({
       name: data.name,
       description: data.description,
@@ -60,6 +70,10 @@ export class FormTemplateService {
 
     if (!template) {
       return null;
+    }
+
+    if (data.workflow_id !== undefined) {
+      await this.ensureWorkflowCanBeAssociated(data.workflow_id);
     }
 
     if (data.name !== undefined) {
@@ -99,6 +113,8 @@ export class FormTemplateService {
       return null;
     }
 
+    await this.ensureWorkflowCanBeAssociated(workflowId);
+
     template.workflow_id = workflowId;
     return this.repository.save(template);
   }
@@ -106,5 +122,22 @@ export class FormTemplateService {
   async delete(id: string): Promise<boolean> {
     const result = await this.repository.delete(id);
     return typeof result.affected === "number" && result.affected > 0;
+  }
+
+  private async ensureWorkflowCanBeAssociated(
+    workflowId?: string | null
+  ): Promise<void> {
+    if (workflowId === undefined || workflowId === null) {
+      return;
+    }
+
+    const workflow = await this.workflowRepository.findOneBy({
+      id: workflowId,
+      is_active: true,
+    });
+
+    if (!workflow) {
+      throw new Error(INVALID_WORKFLOW_ASSOCIATION_ERROR);
+    }
   }
 }
