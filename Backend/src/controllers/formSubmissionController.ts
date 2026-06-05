@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { FormSubmissionStatus } from "../models/FormSubmission";
 import {
+  FindSubmissionsFilters,
   FormSubmissionService,
   INVALID_STATUS_TRANSITION_ERROR,
 } from "../services/formSubmissionService";
@@ -31,6 +32,117 @@ function validateChangedBy(changedBy: unknown): string | null {
   }
 
   return null;
+}
+
+function getQueryStringValue(value: unknown): string | undefined {
+  if (typeof value === "string") {
+    const trimmedValue = value.trim();
+    return trimmedValue.length > 0 ? trimmedValue : undefined;
+  }
+
+  if (Array.isArray(value)) {
+    const firstStringValue = value.find(
+      (item): item is string => typeof item === "string"
+    );
+
+    if (!firstStringValue) {
+      return undefined;
+    }
+
+    const trimmedValue = firstStringValue.trim();
+    return trimmedValue.length > 0 ? trimmedValue : undefined;
+  }
+
+  return undefined;
+}
+
+function parseDateFilter(
+  value: string | undefined,
+  fieldName: string,
+  useEndOfDay = false
+): { date?: Date; error?: string } {
+  if (!value) {
+    return {};
+  }
+
+  const isSimpleDate = /^\d{4}-\d{2}-\d{2}$/.test(value);
+  const parsedDate = isSimpleDate
+    ? new Date(`${value}T00:00:00.000Z`)
+    : new Date(value);
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    return {
+      error: `O parâmetro '${fieldName}' deve ser uma data válida.`,
+    };
+  }
+
+  if (isSimpleDate && useEndOfDay) {
+    parsedDate.setUTCHours(23, 59, 59, 999);
+  }
+
+  return { date: parsedDate };
+}
+
+function buildFindSubmissionsFilters(
+  req: Request
+): { filters?: FindSubmissionsFilters; error?: string } {
+  const formTemplateId = getQueryStringValue(req.query.form_template_id);
+  const status = getQueryStringValue(req.query.status);
+
+  const submittedFromValue =
+    getQueryStringValue(req.query.submitted_from) ||
+    getQueryStringValue(req.query.date_from);
+
+  const submittedToValue =
+    getQueryStringValue(req.query.submitted_to) ||
+    getQueryStringValue(req.query.date_to);
+
+  if (
+    status !== undefined &&
+    !allowedSubmissionStatuses.includes(status as FormSubmissionStatus)
+  ) {
+    return {
+      error: "Status inválido. Use: submitted, in_progress, completed ou rejected.",
+    };
+  }
+
+  const submittedFromResult = parseDateFilter(
+    submittedFromValue,
+    submittedFromValue ? "submitted_from/date_from" : "submitted_from"
+  );
+
+  if (submittedFromResult.error) {
+    return { error: submittedFromResult.error };
+  }
+
+  const submittedToResult = parseDateFilter(
+    submittedToValue,
+    submittedToValue ? "submitted_to/date_to" : "submitted_to",
+    true
+  );
+
+  if (submittedToResult.error) {
+    return { error: submittedToResult.error };
+  }
+
+  if (
+    submittedFromResult.date &&
+    submittedToResult.date &&
+    submittedFromResult.date > submittedToResult.date
+  ) {
+    return {
+      error: "A data inicial não pode ser superior à data final.",
+    };
+  }
+
+  return {
+    filters: {
+      form_template_id: formTemplateId,
+      status: status as FormSubmissionStatus | undefined,
+      submitted_from: submittedFromResult.date,
+      submitted_to: submittedToResult.date,
+    },
+  };
 }
 
 export class FormSubmissionController {
@@ -72,9 +184,16 @@ export class FormSubmissionController {
     }
   }
 
-  async findAll(_req: Request, res: Response): Promise<void> {
+  async findAll(req: Request, res: Response): Promise<void> {
     try {
-      const submissions = await service.findAll();
+      const { filters, error } = buildFindSubmissionsFilters(req);
+
+      if (error) {
+        res.status(400).json({ error });
+        return;
+      }
+
+      const submissions = await service.findAll(filters);
       res.json(submissions);
     } catch (error) {
       console.error("Erro ao listar submissões:", error);

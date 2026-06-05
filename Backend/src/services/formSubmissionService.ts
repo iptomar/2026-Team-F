@@ -19,6 +19,13 @@ interface UpdateSubmissionStatusInput {
   changed_by?: string | null;
 }
 
+export interface FindSubmissionsFilters {
+  form_template_id?: string;
+  status?: FormSubmissionStatus;
+  submitted_from?: Date;
+  submitted_to?: Date;
+}
+
 interface FormFieldLike {
   id?: string;
   type?: string;
@@ -116,10 +123,38 @@ export class FormSubmissionService {
     return this.submissionRepository.save(submission);
   }
 
-  async findAll(): Promise<FormSubmission[]> {
-    return this.submissionRepository.find({
-      order: { submitted_at: "DESC" },
-    });
+  async findAll(
+    filters: FindSubmissionsFilters = {}
+  ): Promise<FormSubmission[]> {
+    const query = this.submissionRepository.createQueryBuilder("submission");
+
+    if (filters.form_template_id) {
+      query.andWhere("submission.form_template_id = :formTemplateId", {
+        formTemplateId: filters.form_template_id,
+      });
+    }
+
+    if (filters.status) {
+      query.andWhere("submission.status = :status", {
+        status: filters.status,
+      });
+    }
+
+    if (filters.submitted_from) {
+      query.andWhere("submission.submitted_at >= :submittedFrom", {
+        submittedFrom: filters.submitted_from,
+      });
+    }
+
+    if (filters.submitted_to) {
+      query.andWhere("submission.submitted_at <= :submittedTo", {
+        submittedTo: filters.submitted_to,
+      });
+    }
+
+    query.orderBy("submission.submitted_at", "DESC");
+
+    return query.getMany();
   }
 
   async findById(id: string): Promise<FormSubmission | null> {
