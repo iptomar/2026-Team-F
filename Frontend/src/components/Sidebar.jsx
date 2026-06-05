@@ -7,6 +7,7 @@ import {
   MousePointer2,
   PanelLeftClose,
   PanelLeftOpen,
+  TextCursor,
   Type,
 } from "lucide-react";
 
@@ -40,6 +41,13 @@ const Sidebar = ({ addField, FIELD_TYPES, collapsed = false, onToggle }) => {
       description: "Lista compacta de opções",
       color: "orange",
     },
+    {
+      type: FIELD_TYPES.TEXT,
+      icon: TextCursor,
+      title: "Campo de Texto",
+      description: "Caixa de escrita para respostas livres",
+      color: "yellow",
+    },
   ];
 
   const colorClasses = {
@@ -62,6 +70,11 @@ const Sidebar = ({ addField, FIELD_TYPES, collapsed = false, onToggle }) => {
       card: "bg-orange-50 hover:bg-orange-100 border-orange-200 text-orange-800",
       icon: "bg-white text-orange-700",
       dock: "text-orange-700 hover:bg-orange-50 hover:border-orange-200",
+    },
+    yellow: {
+      card: "bg-amber-50 hover:bg-amber-100 border-amber-200 text-amber-800",
+      icon: "bg-white text-amber-700",
+      dock: "text-amber-700 hover:bg-amber-50 hover:border-amber-200",
     },
   };
 

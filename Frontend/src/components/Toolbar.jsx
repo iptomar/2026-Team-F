@@ -4,6 +4,7 @@ import {
   ChevronDown,
   CircleDot,
   Plus,
+  TextCursor,
   Type,
 } from "lucide-react";
 
@@ -32,6 +33,12 @@ const Toolbar = ({ addField, FIELD_TYPES }) => {
       icon: ChevronDown,
       label: "Dropdown",
       className: "bg-orange-50 hover:bg-orange-100 text-orange-700 border-orange-200",
+    },
+    {
+      type: FIELD_TYPES.TEXT,
+      icon: TextCursor,
+      label: "Campo de Texto",
+      className: "bg-amber-600 hover:bg-amber-700 text-white border-amber-600",
     },
   ];
 

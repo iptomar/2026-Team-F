@@ -171,14 +171,12 @@ export const FormDropdown = ({
     <select
       value={value || ''}
       onChange={onChange}
-      className={`w-full p-3 border border-slate-200 rounded-xl bg-white text-slate-700 transition outline-none ${isPreview
-          ? 'cursor-pointer hover:bg-slate-50 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500'
-          : 'cursor-not-allowed opacity-80'
-        }`}
+      className={`w-full p-3 border rounded-xl bg-white text-sm font-medium text-slate-700 transition-all outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${
+        isPreview ? 'cursor-pointer hover:border-slate-300' : 'cursor-not-allowed opacity-80'
+      }`}
       disabled={!isPreview}
     >
       <option value="">Selecione uma opção...</option>
-
       {options.length > 0 ? (
         options.map((opt, index) => (
           <option key={index} value={opt}>
@@ -191,5 +189,31 @@ export const FormDropdown = ({
         </option>
       )}
     </select>
+  </FieldWrapper>
+);
+
+// ======================================================
+// 5. CAMPO DE TEXTO PERSONALIZADO (CAIXA DE ESCRITA)
+// ======================================================
+export const FormTextInput = ({
+  label,
+  required,
+  error,
+  isPreview = false,
+  value = '',
+  onChange,
+  placeholder = 'Digite aqui a sua resposta...'
+}) => (
+  <FieldWrapper label={label} required={required} error={error}>
+    <input
+      type="text"
+      value={value || ''}
+      onChange={onChange}
+      placeholder={placeholder}
+      className={`w-full p-3 border rounded-xl bg-white text-sm font-medium text-slate-700 transition-all outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${
+        isPreview ? 'hover:border-slate-300' : 'cursor-not-allowed opacity-80'
+      }`}
+      disabled={!isPreview}
+    />
   </FieldWrapper>
 );

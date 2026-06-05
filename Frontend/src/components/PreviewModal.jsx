@@ -20,6 +20,7 @@ import {
   FormRadioGroup,
   FormCheckbox,
   FormDropdown,
+  FormTextInput,
 } from './DynamicElements';
 
 const PAGE_SIZES = {
@@ -155,6 +156,17 @@ const PreviewModal = ({
             onChange={(event) =>
               handlePreviewChange(field.id, event.target.value)
             }
+          />
+        );
+
+      case 'text':
+        return (
+          <FormTextInput
+            label={field.label}
+            required={field.required}
+            isPreview={true}
+            value={currentValue}
+            onChange={(value) => handlePreviewChange(field.id, value)}
           />
         );
 

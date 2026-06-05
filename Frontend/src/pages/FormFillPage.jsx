@@ -9,6 +9,7 @@ import {
   FormRadioGroup,
   FormCheckbox,
   FormDropdown,
+  FormTextInput,
 } from '../components/DynamicElements';
 
 const FormFillPage = ({ templateId, onBack }) => {
@@ -124,7 +125,7 @@ const FormFillPage = ({ templateId, onBack }) => {
       if (!response.ok) {
         setErro(
           resultado?.error ||
-          'Erro ao submeter o formulário. Confirme se o backend está ativo.'
+            'Erro ao submeter o formulário. Confirme se o backend está ativo.'
         );
         return;
       }
@@ -184,6 +185,17 @@ const FormFillPage = ({ templateId, onBack }) => {
             onChange={(event) =>
               handleInputChange(field.id, event.target.value)
             }
+          />
+        );
+
+      case 'text':
+        return (
+          <FormTextInput
+            label={field.label}
+            required={field.required}
+            isPreview={true}
+            value={valorAtual}
+            onChange={(valor) => handleInputChange(field.id, valor)}
           />
         );
 
