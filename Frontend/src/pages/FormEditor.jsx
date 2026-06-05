@@ -647,7 +647,7 @@ const FormEditor = ({ formId, onGoHome }) => {
         return (
           <FormCheckbox
             label={field.label}
-            description={field.label}
+            options={field.options}
             required={field.required}
           />
         );
@@ -673,7 +673,7 @@ const FormEditor = ({ formId, onGoHome }) => {
       type,
       label: `Novo campo de ${type}`,
       required: false,
-      options: (type === FIELD_TYPES.RADIO || type === FIELD_TYPES.DROPDOWN)
+      options: (type === FIELD_TYPES.RADIO || type === FIELD_TYPES.DROPDOWN || type === FIELD_TYPES.CHECKBOX)
         ? ['Opção 1']
         : [],
       order: fields.length + 1,
@@ -857,15 +857,15 @@ const FormEditor = ({ formId, onGoHome }) => {
 
   const pageGridStyle = showGrid
     ? {
-        backgroundColor: '#ffffff',
-        backgroundImage:
-          'linear-gradient(to right, rgba(99, 102, 241, 0.14) 1px, transparent 1px), linear-gradient(to bottom, rgba(99, 102, 241, 0.14) 1px, transparent 1px)',
-        backgroundSize: '24px 24px',
-        backgroundPosition: '0 0',
-      }
+      backgroundColor: '#ffffff',
+      backgroundImage:
+        'linear-gradient(to right, rgba(99, 102, 241, 0.14) 1px, transparent 1px), linear-gradient(to bottom, rgba(99, 102, 241, 0.14) 1px, transparent 1px)',
+      backgroundSize: '24px 24px',
+      backgroundPosition: '0 0',
+    }
     : {
-        backgroundColor: '#ffffff',
-      };
+      backgroundColor: '#ffffff',
+    };
 
   if (isLoading) {
     return (
@@ -882,13 +882,12 @@ const FormEditor = ({ formId, onGoHome }) => {
     <div className="flex bg-slate-100 h-[calc(100vh-92px)] overflow-hidden relative">
       {toast && (
         <div
-          className={`fixed top-24 right-6 z-[100] max-w-sm rounded-2xl border px-5 py-4 shadow-xl backdrop-blur-md ${
-            toast.type === 'error'
+          className={`fixed top-24 right-6 z-[100] max-w-sm rounded-2xl border px-5 py-4 shadow-xl backdrop-blur-md ${toast.type === 'error'
               ? 'bg-red-50/95 border-red-200 text-red-800'
               : toast.type === 'info'
                 ? 'bg-slate-50/95 border-slate-200 text-slate-800'
                 : 'bg-emerald-50/95 border-emerald-200 text-emerald-800'
-          }`}
+            }`}
         >
           <div className="flex items-start gap-3">
             <span className="mt-0.5 h-5 w-5 rounded-full bg-white/80 flex items-center justify-center text-xs font-black">
@@ -1286,9 +1285,8 @@ const FormEditor = ({ formId, onGoHome }) => {
           <main className="flex-1 order-1 min-w-0 overflow-hidden p-5 lg:p-6 relative">
             <div
               ref={canvasViewportRef}
-              className={`relative h-full overflow-auto rounded-3xl border border-slate-200 bg-slate-200/70 shadow-inner ${
-                isCanvasDragOver ? 'ring-4 ring-indigo-200' : ''
-              }`}
+              className={`relative h-full overflow-auto rounded-3xl border border-slate-200 bg-slate-200/70 shadow-inner ${isCanvasDragOver ? 'ring-4 ring-indigo-200' : ''
+                }`}
               onDragOver={handleCanvasDragOver}
               onDragLeave={handleCanvasDragLeave}
               onDrop={handleCanvasDrop}
@@ -1374,11 +1372,10 @@ const FormEditor = ({ formId, onGoHome }) => {
                 <button
                   type="button"
                   onClick={handleShowGridChange}
-                  className={`h-9 w-9 rounded-xl border inline-flex items-center justify-center transition ${
-                    showGrid
+                  className={`h-9 w-9 rounded-xl border inline-flex items-center justify-center transition ${showGrid
                       ? 'bg-indigo-600 text-white border-indigo-600'
                       : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-                  }`}
+                    }`}
                   title={showGrid ? 'Ocultar grelha' : 'Mostrar grelha'}
                 >
                   <Grid3X3 size={15} />
@@ -1455,11 +1452,10 @@ const FormEditor = ({ formId, onGoHome }) => {
                             handlePageFormatChange(size);
                             setIsPageFormatMenuOpen(false);
                           }}
-                          className={`w-full text-left px-3 py-2 rounded-xl text-xs font-black transition ${
-                            pageFormat === size
+                          className={`w-full text-left px-3 py-2 rounded-xl text-xs font-black transition ${pageFormat === size
                               ? 'bg-indigo-600 text-white'
                               : 'text-slate-700 hover:bg-slate-50'
-                          }`}
+                            }`}
                         >
                           {size}
                         </button>
@@ -1494,11 +1490,10 @@ const FormEditor = ({ formId, onGoHome }) => {
                             handlePageOrientationChange(value);
                             setIsOrientationMenuOpen(false);
                           }}
-                          className={`w-full text-left px-3 py-2 rounded-xl text-xs font-black transition ${
-                            pageOrientation === value
+                          className={`w-full text-left px-3 py-2 rounded-xl text-xs font-black transition ${pageOrientation === value
                               ? 'bg-indigo-600 text-white'
                               : 'text-slate-700 hover:bg-slate-50'
-                          }`}
+                            }`}
                         >
                           {label}
                         </button>
