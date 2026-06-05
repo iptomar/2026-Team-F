@@ -123,6 +123,31 @@ export class FormSubmissionController {
     }
   }
 
+  async findHistoryBySubmissionId(
+    req: Request<{ id: string }>,
+    res: Response
+  ): Promise<void> {
+    try {
+      const { id } = req.params;
+
+      const submission = await service.findById(id);
+
+      if (!submission) {
+        res.status(404).json({ error: "Submissão não encontrada." });
+        return;
+      }
+
+      const history = await service.findHistoryBySubmissionId(id);
+
+      res.json(history);
+    } catch (error) {
+      console.error("Erro ao consultar histórico da submissão:", error);
+      res.status(500).json({
+        error: "Erro interno ao consultar histórico da submissão.",
+      });
+    }
+  }
+
   async findByTemplateId(
     req: Request<{ formTemplateId: string }>,
     res: Response

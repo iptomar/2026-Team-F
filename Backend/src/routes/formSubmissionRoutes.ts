@@ -16,6 +16,10 @@ router.get("/:id/details", (req, res) =>
   controller.findDetailsById(req, res)
 );
 
+router.get("/:id/history", (req, res) =>
+  controller.findHistoryBySubmissionId(req, res)
+);
+
 router.patch("/:id/status", (req, res) =>
   controller.updateStatus(req, res)
 );
