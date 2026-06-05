@@ -80,7 +80,8 @@ const FormFillPage = ({ templateId, onBack }) => {
         valor === undefined ||
         valor === null ||
         valor === '' ||
-        valor === false
+        valor === false ||
+        (Array.isArray(valor) && valor.length === 0)
       ) {
         return `O campo "${field.label}" é obrigatório.`;
       }
@@ -123,7 +124,7 @@ const FormFillPage = ({ templateId, onBack }) => {
       if (!response.ok) {
         setErro(
           resultado?.error ||
-            'Erro ao submeter o formulário. Confirme se o backend está ativo.'
+          'Erro ao submeter o formulário. Confirme se o backend está ativo.'
         );
         return;
       }
@@ -164,13 +165,11 @@ const FormFillPage = ({ templateId, onBack }) => {
         return (
           <FormCheckbox
             label={field.label}
-            description={field.label}
+            options={field.options}
             required={field.required}
             isPreview={true}
-            checked={Boolean(valorAtual)}
-            onChange={(event) =>
-              handleInputChange(field.id, event.target.checked)
-            }
+            value={valorAtual}
+            onChange={(newArray) => handleInputChange(field.id, newArray)}
           />
         );
 

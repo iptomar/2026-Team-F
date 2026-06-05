@@ -136,13 +136,11 @@ const PreviewModal = ({
         return (
           <FormCheckbox
             label={field.label}
-            description={field.label}
+            options={field.options}
             required={field.required}
             isPreview={true}
-            checked={Boolean(currentValue)}
-            onChange={(event) =>
-              handlePreviewChange(field.id, event.target.checked)
-            }
+            value={currentValue}
+            onChange={(newArray) => handlePreviewChange(field.id, newArray)}
           />
         );
 
@@ -177,26 +175,25 @@ const PreviewModal = ({
 
   const pageGridStyle = showGrid
     ? {
-        backgroundColor: '#ffffff',
-        backgroundImage:
-          'linear-gradient(to right, rgba(99, 102, 241, 0.14) 1px, transparent 1px), linear-gradient(to bottom, rgba(99, 102, 241, 0.14) 1px, transparent 1px)',
-        backgroundSize: '24px 24px',
-        backgroundPosition: '0 0',
-      }
+      backgroundColor: '#ffffff',
+      backgroundImage:
+        'linear-gradient(to right, rgba(99, 102, 241, 0.14) 1px, transparent 1px), linear-gradient(to bottom, rgba(99, 102, 241, 0.14) 1px, transparent 1px)',
+      backgroundSize: '24px 24px',
+      backgroundPosition: '0 0',
+    }
     : {
-        backgroundColor: '#ffffff',
-      };
+      backgroundColor: '#ffffff',
+    };
 
   const zoomControl = (
     <div className="relative inline-flex items-center gap-3 rounded-2xl bg-white border border-slate-200 shadow-xl px-4 py-3 text-xs font-black text-slate-700">
       <button
         type="button"
         onClick={() => setShowGrid((previous) => !previous)}
-        className={`h-9 w-9 rounded-xl border inline-flex items-center justify-center transition ${
-          showGrid
+        className={`h-9 w-9 rounded-xl border inline-flex items-center justify-center transition ${showGrid
             ? 'bg-indigo-600 text-white border-indigo-600'
             : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-        }`}
+          }`}
         title={showGrid ? 'Ocultar grelha' : 'Mostrar grelha'}
       >
         <Grid3X3 size={15} />

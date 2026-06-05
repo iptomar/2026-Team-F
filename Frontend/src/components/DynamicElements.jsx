@@ -59,15 +59,13 @@ export const FormRadioGroup = ({
           return (
             <label
               key={index}
-              className={`flex items-center p-3 border rounded-xl transition-all ${
-                isPreview
+              className={`flex items-center p-3 border rounded-xl transition-all ${isPreview
                   ? 'cursor-pointer hover:bg-indigo-50 hover:border-indigo-200'
                   : 'cursor-not-allowed opacity-80'
-              } ${
-                checked
+                } ${checked
                   ? 'bg-indigo-50 border-indigo-300'
                   : 'bg-white border-slate-200'
-              }`}
+                }`}
             >
               <input
                 type="radio"
@@ -95,43 +93,70 @@ export const FormRadioGroup = ({
 
 export const FormCheckbox = ({
   label,
-  description,
+  options = [],
   required,
   error,
   isPreview = false,
-  checked = false,
+  value,
   onChange,
-}) => (
-  <FieldWrapper label={label} required={required} error={error}>
-    <label
-      className={`flex items-start p-3 border rounded-xl transition-all ${
-        isPreview
-          ? 'cursor-pointer hover:bg-emerald-50 hover:border-emerald-200'
-          : 'cursor-not-allowed opacity-80'
-      } ${
-        checked
-          ? 'bg-emerald-50 border-emerald-300'
-          : 'bg-white border-slate-200'
-      }`}
-    >
-      <div className="flex items-center h-5">
-        <input
-          type="checkbox"
-          checked={Boolean(checked)}
-          onChange={onChange}
-          className="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-slate-300 rounded"
-          disabled={!isPreview}
-        />
-      </div>
+}) => {
+  const currentValue = Array.isArray(value) ? value : [];
 
-      <div className="ml-3 text-sm">
-        <span className="font-semibold text-slate-700">
-          {description || 'Confirmar seleção'}
-        </span>
+  const handleToggle = (opt) => {
+    if (!onChange) return;
+
+    const copy = [...currentValue];
+    const index = copy.indexOf(opt);
+
+    if (index !== -1) {
+      copy.splice(index, 1);
+    } else {
+      copy.push(opt);
+    }
+
+    onChange(copy);
+  };
+
+  return (
+    <FieldWrapper label={label} required={required} error={error}>
+      <div className="space-y-2">
+        {options.length > 0 ? (
+          options.map((opt, index) => {
+            const checked = currentValue.includes(opt);
+
+            return (
+              <label
+                key={index}
+                className={`flex items-center p-3 border rounded-xl transition-all ${isPreview
+                    ? 'cursor-pointer hover:bg-emerald-50 hover:border-emerald-200'
+                    : 'cursor-not-allowed opacity-80'
+                  } ${checked
+                    ? 'bg-emerald-50 border-emerald-300'
+                    : 'bg-white border-slate-200'
+                  }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  onChange={() => handleToggle(opt)}
+                  className="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-slate-300 rounded"
+                  disabled={!isPreview}
+                />
+                <span className="ml-3 text-sm font-medium text-slate-700">
+                  {opt}
+                </span>
+              </label>
+            );
+          })
+        ) : (
+          <p className="text-xs italic text-slate-400 bg-slate-50 border border-slate-200 rounded-xl p-3">
+            Nenhuma opção configurada.
+          </p>
+        )}
       </div>
-    </label>
-  </FieldWrapper>
-);
+    </FieldWrapper>
+  );
+};
 
 export const FormDropdown = ({
   label,
@@ -146,11 +171,10 @@ export const FormDropdown = ({
     <select
       value={value || ''}
       onChange={onChange}
-      className={`w-full p-3 border border-slate-200 rounded-xl bg-white text-slate-700 transition outline-none ${
-        isPreview
+      className={`w-full p-3 border border-slate-200 rounded-xl bg-white text-slate-700 transition outline-none ${isPreview
           ? 'cursor-pointer hover:bg-slate-50 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500'
           : 'cursor-not-allowed opacity-80'
-      }`}
+        }`}
       disabled={!isPreview}
     >
       <option value="">Selecione uma opção...</option>
