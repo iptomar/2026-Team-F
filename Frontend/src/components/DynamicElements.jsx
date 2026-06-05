@@ -208,7 +208,8 @@ export const FormTextInput = ({
     <input
       type="text"
       value={value || ''}
-      onChange={onChange}
+      // Correção aplicada de forma cirúrgica para extrair o valor da string digitada
+      onChange={(e) => onChange?.(e.target.value)}
       placeholder={placeholder}
       className={`w-full p-3 border rounded-xl bg-white text-sm font-medium text-slate-700 transition-all outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${
         isPreview ? 'hover:border-slate-300' : 'cursor-not-allowed opacity-80'
