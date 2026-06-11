@@ -27,7 +27,101 @@ const FieldCard = ({
 
         <div className="space-y-4">
 
-          {/* INPUT LABEL */}
+          
+
+   {/* INPUT LABEL */}
+
+<div>
+
+  <label className="block text-sm font-semibold text-gray-700 mb-2">
+    Descrição
+  </label>
+
+  <textarea
+    value={editData.description || ""}
+    onChange={(e) =>
+      setEditData({
+        ...editData,
+        description: e.target.value
+      })
+    }
+    className="w-full border border-gray-300 rounded-lg px-4 py-2"
+  />
+
+</div>
+
+
+<div>
+
+  <label className="block text-sm font-semibold text-gray-700 mb-2">
+    Tamanho da Fonte
+  </label>
+
+  <input
+    type="number"
+    value={editData.fontSize || 20}
+    onChange={(e) =>
+      setEditData({
+        ...editData,
+        fontSize: Number(e.target.value)
+      })
+    }
+    className="w-full border border-gray-300 rounded-lg px-4 py-2"
+  />
+
+</div>
+
+
+<div>
+
+  <label className="block text-sm font-semibold text-gray-700 mb-2">
+    Peso da Fonte
+  </label>
+
+  <select
+    value={editData.fontWeight || "bold"}
+    onChange={(e) =>
+      setEditData({
+        ...editData,
+        fontWeight: e.target.value
+      })
+    }
+    className="w-full border border-gray-300 rounded-lg px-4 py-2"
+  >
+    <option value="normal">Normal</option>
+    <option value="bold">Bold</option>
+  </select>
+
+</div>
+
+
+<div>
+
+  <label className="block text-sm font-semibold text-gray-700 mb-2">
+    Alinhamento
+  </label>
+
+  <select
+    value={editData.textAlign || "left"}
+    onChange={(e) =>
+      setEditData({
+        ...editData,
+        textAlign: e.target.value
+      })
+    }
+    className="w-full border border-gray-300 rounded-lg px-4 py-2"
+  >
+    <option value="left">Esquerda</option>
+    <option value="center">Centro</option>
+    <option value="right">Direita</option>
+  </select>
+
+</div>
+
+{/* INPUT LABEL */}
+
+
+
           <div>
 
             <label className="block text-sm font-semibold text-gray-700 mb-2">

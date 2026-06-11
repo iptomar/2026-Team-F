@@ -161,25 +161,27 @@ const handleDragEnd = (result) => {
   // ======================================================
   // GUARDAR ALTERAÇÕES
   // ======================================================
-  const saveField = (id) => {
+  
+const saveField = (id) => {
 
-    setFields(prevFields =>
+  setFields(prevFields =>
 
-      prevFields.map(field =>
+    prevFields.map(field =>
 
-        field.id === id
-          ? editData
-          : field
+      field.id === id
+        ? {
+            ...field,
+            ...editData
+          }
+        : field
 
-      )
+    )
 
-    );
+  );
 
-    setEditingId(null);
+  setEditingId(null);
 
-  };
-
-
+};
   // ======================================================
   // CANCELAR EDIÇÃO
   // ======================================================
@@ -258,8 +260,16 @@ const handleDragEnd = (result) => {
  // Dentro do FormEditor, atualiza o renderField:
   const renderField = (field) => {
     switch (field.type) {
-      case FIELD_TYPES.LABEL:
-        return <FormLabel value={field.label} />;
+     case FIELD_TYPES.LABEL:
+      return (
+        <FormLabel
+          value={field.label}
+          description={field.description}
+          fontSize={field.fontSize}
+          fontWeight={field.fontWeight}
+          textAlign={field.textAlign}
+        />
+      );
       case FIELD_TYPES.RADIO:
         return <FormRadioGroup label={field.label} options={field.options} required={field.required} />;
       case FIELD_TYPES.CHECKBOX:
@@ -273,18 +283,38 @@ const handleDragEnd = (result) => {
 
   // Atualiza o addField para suportar opções no dropdown:
   const addField = (type) => {
-    const newField = {
-      id: crypto.randomUUID(), 
-      type: type,
-      label: `Novo campo de ${type}`,
-      required: false, 
-      options: (type === FIELD_TYPES.RADIO || type === FIELD_TYPES.DROPDOWN) ? ['Opção 1'] : [], // <-- Atualizado
-      order: fields.length + 1, 
-    };
-    setFields(prevFields => [...prevFields, newField]);
+
+  const newField = {
+
+    id: crypto.randomUUID(),
+
+    type: type,
+
+    label: `Novo campo de ${type}`,
+
+    description: "",
+
+    fontSize: 20,
+
+    fontWeight: "normal",
+
+    textAlign: "left",
+
+    required: false,
+
+    options:
+      (type === FIELD_TYPES.RADIO ||
+        type === FIELD_TYPES.DROPDOWN)
+        ? ['Opção 1']
+        : [],
+
+    order: fields.length + 1,
+
   };
 
+  setFields(prevFields => [...prevFields, newField]);
 
+};
   // ======================================================
   // SALVAR FORMULÁRIO NO BANCO DE DADOS
   // ======================================================

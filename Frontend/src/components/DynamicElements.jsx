@@ -13,13 +13,41 @@ const FieldWrapper = ({ label, required, children, error }) => (
   </div>
 );
 
-// 1. Bloco de Texto (Label)
-export const FormLabel = ({ value, description }) => (
+
+{/* INPUT LABEL */}
+export const FormLabel = ({
+  value,
+  description,
+  fontSize,
+  fontWeight,
+  textAlign
+}) => (
+
   <div className="mb-6 p-2 border-l-4 border-blue-500 bg-blue-50">
-    <h3 className="text-xl font-bold text-blue-900">{value || "Título da Secção"}</h3>
-    {description && <p className="text-sm text-blue-700 mt-1">{description}</p>}
+
+    <h3
+      className="text-blue-900"
+      style={{
+        fontSize: `${fontSize || 20}px`,
+        fontWeight: fontWeight || "bold",
+        textAlign: textAlign || "left"
+      }}
+    ></h3>
+
   </div>
+
 );
+
+
+
+
+
+
+
+
+
+{/* INPUT LABEL */}
+
 
 // 2. Componente de Grupo de Radio Buttons (Radio Group)
 export const FormRadioGroup = ({ label, options = [], required, error, isPreview }) => (
