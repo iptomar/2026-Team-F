@@ -3,7 +3,6 @@
 // Página principal do editor de formulários
 // ======================================================
 
-<<<<<<< HEAD
 import {
   DragDropContext,
   Droppable,
@@ -11,7 +10,6 @@ import {
 } from '@hello-pangea/dnd';
 
 import React, { useState, useEffect } from 'react';
-=======
 import React, { useState, useEffect, useRef } from 'react';
 import {
   ArrowLeft,
@@ -33,7 +31,6 @@ import {
   AlertTriangle,
   RotateCcw,
 } from 'lucide-react';
->>>>>>> 52967b41d46f79e718beaf8555c436f74e7b6500
 
 // ======================================================
 // COMPONENTES DINÂMICOS
@@ -230,7 +227,6 @@ const FormEditor = ({ formId, onGoHome }) => {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-<<<<<<< HEAD
 const handleDragEnd = (result) => {
 
   // Se não houver destino
@@ -258,7 +254,6 @@ const handleDragEnd = (result) => {
 
 
 
-=======
   // Melhorias visuais/UX sem alteração de schema/backend
   const [showGrid, setShowGrid] = useState(false);
   const [toast, setToast] = useState(null);
@@ -389,7 +384,6 @@ const handleDragEnd = (result) => {
     setIsAutosaveEnabled(true);
     showToast('Rascunho local descartado.', 'info');
   };
->>>>>>> 52967b41d46f79e718beaf8555c436f74e7b6500
 
   // ======================================================
   // CTRL + SCROLL APENAS NO PAINEL DA PÁGINA
@@ -667,29 +661,8 @@ const handleDragEnd = (result) => {
   // ======================================================
   // GUARDAR ALTERAÇÕES
   // ======================================================
-<<<<<<< HEAD
   
-const saveField = (id) => {
 
-  setFields(prevFields =>
-
-    prevFields.map(field =>
-
-      field.id === id
-        ? {
-            ...field,
-            ...editData
-          }
-        : field
-
-    )
-
-  );
-
-  setEditingId(null);
-
-};
-=======
   const saveField = (id) => {
     markUserEdited();
 
@@ -703,7 +676,6 @@ const saveField = (id) => {
     showToast('Campo atualizado com sucesso.');
   };
 
->>>>>>> 52967b41d46f79e718beaf8555c436f74e7b6500
   // ======================================================
   // CANCELAR EDIÇÃO
   // ======================================================
@@ -790,8 +762,7 @@ const saveField = (id) => {
   // ======================================================
   // ADICIONAR NOVO CAMPO
   // ======================================================
-  const addField = (type) => {
-<<<<<<< HEAD
+const addField = (type) => {
 
   const newField = {
 
@@ -821,24 +792,13 @@ const saveField = (id) => {
 
   };
 
-  setFields(prevFields => [...prevFields, newField]);
-=======
-    const newField = {
-      id: crypto.randomUUID(),
-      type,
-      label: `Novo campo de ${type}`,
-      required: false,
-      options: (type === FIELD_TYPES.RADIO || type === FIELD_TYPES.DROPDOWN)
-        ? ['Opção 1']
-        : [],
-      order: fields.length + 1,
-    };
+  markUserEdited();
 
-    markUserEdited();
-    setFields((prevFields) => [...prevFields, newField]);
-    showToast('Campo adicionado ao formulário.', 'success');
-  };
+  setFields((prevFields) => [...prevFields, newField]);
 
+  showToast('Campo adicionado ao formulário.', 'success');
+
+};
   const handleCanvasDragOver = (event) => {
     event.preventDefault();
 
@@ -868,7 +828,6 @@ const saveField = (id) => {
 
     addField(droppedFieldType);
   };
->>>>>>> 52967b41d46f79e718beaf8555c436f74e7b6500
 
 };
   // ======================================================
@@ -1262,7 +1221,6 @@ const saveField = (id) => {
                   Construa, organize e pré-visualize a estrutura do formulário.
                 </p>
 
-<<<<<<< HEAD
         <DragDropContext onDragEnd={handleDragEnd}>
   <Droppable droppableId="form-fields">
     {(provided) => (
@@ -1322,8 +1280,7 @@ const saveField = (id) => {
     )}
   </Droppable>
 </DragDropContext>
-    )}
-=======
+    
                 {lastAutosavedAt && hasUserEdited && (
                   <p className="text-xs text-slate-400 mt-1">
                     Guardado localmente às {formatAutosaveDate(lastAutosavedAt)}.
@@ -1376,7 +1333,6 @@ const saveField = (id) => {
                       Propriedades do formulário
                     </h2>
                   </div>
->>>>>>> 52967b41d46f79e718beaf8555c436f74e7b6500
 
                   <button
                     type="button"
@@ -1765,6 +1721,6 @@ const saveField = (id) => {
       </div>
     </div>
   );
-};
+
 
 export default FormEditor;
