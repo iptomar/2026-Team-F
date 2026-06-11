@@ -11,7 +11,25 @@ export enum FormTemplateStatus {
   PUBLISHED = "published",
 }
 
-export type FormFieldType = "label" | "radio" | "checkbox" | "dropdown";
+export type FormFieldType =
+  | "label"
+  | "radio"
+  | "checkbox"
+  | "dropdown"
+  | "text"
+  | "textarea"
+  | "number"
+  | "email"
+  | "date"
+  | "section"
+  | "heading"
+  | "instruction"
+  | "divider"
+  | "text_block"
+  | "paragraph"
+  | "spacer";
+
+export type FormFieldDefaultValue = string | number | boolean | string[] | null;
 
 export interface FormFieldDefinition {
   id: string;
@@ -20,6 +38,23 @@ export interface FormFieldDefinition {
   required?: boolean;
   options?: string[];
   order: number;
+
+  /**
+   * Propriedades opcionais para campos avançados.
+   * Estas propriedades permitem ao frontend representar formulários mais ricos
+   * sem obrigar a novas colunas na base de dados.
+   */
+  description?: string;
+  placeholder?: string;
+  helpText?: string;
+  defaultValue?: FormFieldDefaultValue;
+
+  /**
+   * Suporte opcional a secções/grupos com subcampos.
+   * Mantém compatibilidade com a estrutura atual, mas permite modelos mais
+   * próximos de formulários reais com várias secções.
+   */
+  fields?: FormFieldDefinition[];
 }
 
 @Entity("form_templates")
@@ -42,23 +77,20 @@ export class FormTemplate {
 
   /**
    * Estrutura dinâmica do formulário.
-   * Exemplo:
-   * [
-   *   {
-   *     id: "field_abc",
-   *     type: "radio",
-   *     label: "Escolha uma opção",
-   *     required: true,
-   *     options: ["Opção A", "Opção B"],
-   *     order: 1
-   *   }
-   * ]
+   *
+   * Exemplos de campos suportados:
+   * - label / heading / instruction / section
+   * - radio / checkbox / dropdown
+   * - text / textarea / number / email / date
+   *
+   * A estrutura é guardada em JSON para permitir formulários parametrizados
+   * adaptáveis a vários contextos.
    */
   @Column({ type: "simple-json", default: "[]" })
   fields!: FormFieldDefinition[];
 
   /**
-   * Preparado para futura associação entre formulário e workflow.
+   * Associação opcional entre formulário e workflow.
    * Nesta fase pode ficar null.
    */
   @Column({ type: "varchar", length: 36, nullable: true })

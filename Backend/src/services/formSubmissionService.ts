@@ -6,12 +6,89 @@ import {
   FormSubmissionStatus,
 } from "../models/FormSubmission";
 import { FormTemplate } from "../models/FormTemplate";
+import { SubmissionStatusHistory } from "../models/SubmissionStatusHistory";
 
 interface CreateFormSubmissionInput {
   form_template_id: string;
   data: FormSubmissionData;
   submitted_by?: string | null;
 }
+
+interface UpdateSubmissionStatusInput {
+  status: FormSubmissionStatus;
+  changed_by?: string | null;
+}
+
+export interface FindSubmissionsFilters {
+  form_template_id?: string;
+  status?: FormSubmissionStatus;
+  submitted_from?: Date;
+  submitted_to?: Date;
+}
+
+interface FormFieldLike {
+  id?: string;
+  type?: string;
+  label?: string;
+  name?: string;
+  fields?: FormFieldLike[];
+  order?: number;
+  required?: boolean;
+}
+
+interface ReadableSubmissionAnswer {
+  field_id: string;
+  label: string;
+  type: string;
+  section: string | null;
+  value: unknown;
+  required: boolean;
+  order: number | null;
+  has_answer: boolean;
+}
+
+interface FormSubmissionDetails {
+  submission: FormSubmission;
+  template: FormTemplate | null;
+  answers: ReadableSubmissionAnswer[];
+  metadata: {
+    submission_id: string;
+    form_template_id: string;
+    form_template_name: string | null;
+    status: string;
+    submitted_by: string | null | undefined;
+    submitted_at: Date;
+  };
+}
+
+export const INVALID_STATUS_TRANSITION_ERROR = "INVALID_STATUS_TRANSITION";
+
+const STRUCTURAL_FIELD_TYPES = new Set<string>([
+  "label",
+  "section",
+  "heading",
+  "instruction",
+  "divider",
+  "text_block",
+  "paragraph",
+  "spacer",
+]);
+
+const ALLOWED_STATUS_TRANSITIONS: Record<
+  FormSubmissionStatus,
+  FormSubmissionStatus[]
+> = {
+  [FormSubmissionStatus.SUBMITTED]: [
+    FormSubmissionStatus.IN_PROGRESS,
+    FormSubmissionStatus.REJECTED,
+  ],
+  [FormSubmissionStatus.IN_PROGRESS]: [
+    FormSubmissionStatus.COMPLETED,
+    FormSubmissionStatus.REJECTED,
+  ],
+  [FormSubmissionStatus.COMPLETED]: [],
+  [FormSubmissionStatus.REJECTED]: [],
+};
 
 export class FormSubmissionService {
   private get submissionRepository(): Repository<FormSubmission> {
@@ -20,6 +97,10 @@ export class FormSubmissionService {
 
   private get templateRepository(): Repository<FormTemplate> {
     return AppDataSource.getRepository(FormTemplate);
+  }
+
+  private get statusHistoryRepository(): Repository<SubmissionStatusHistory> {
+    return AppDataSource.getRepository(SubmissionStatusHistory);
   }
 
   async create(data: CreateFormSubmissionInput): Promise<FormSubmission | null> {
@@ -42,10 +123,38 @@ export class FormSubmissionService {
     return this.submissionRepository.save(submission);
   }
 
-  async findAll(): Promise<FormSubmission[]> {
-    return this.submissionRepository.find({
-      order: { submitted_at: "DESC" },
-    });
+  async findAll(
+    filters: FindSubmissionsFilters = {}
+  ): Promise<FormSubmission[]> {
+    const query = this.submissionRepository.createQueryBuilder("submission");
+
+    if (filters.form_template_id) {
+      query.andWhere("submission.form_template_id = :formTemplateId", {
+        formTemplateId: filters.form_template_id,
+      });
+    }
+
+    if (filters.status) {
+      query.andWhere("submission.status = :status", {
+        status: filters.status,
+      });
+    }
+
+    if (filters.submitted_from) {
+      query.andWhere("submission.submitted_at >= :submittedFrom", {
+        submittedFrom: filters.submitted_from,
+      });
+    }
+
+    if (filters.submitted_to) {
+      query.andWhere("submission.submitted_at <= :submittedTo", {
+        submittedTo: filters.submitted_to,
+      });
+    }
+
+    query.orderBy("submission.submitted_at", "DESC");
+
+    return query.getMany();
   }
 
   async findById(id: string): Promise<FormSubmission | null> {
@@ -57,5 +166,197 @@ export class FormSubmissionService {
       where: { form_template_id: formTemplateId },
       order: { submitted_at: "DESC" },
     });
+  }
+
+  async findDetailsById(id: string): Promise<FormSubmissionDetails | null> {
+    const submission = await this.findById(id);
+
+    if (!submission) {
+      return null;
+    }
+
+    const template = await this.templateRepository.findOneBy({
+      id: submission.form_template_id,
+    });
+
+    const answers = template
+      ? this.buildReadableAnswers(
+          template.fields as unknown as FormFieldLike[],
+          submission.data
+        )
+      : [];
+
+    return {
+      submission,
+      template,
+      answers,
+      metadata: {
+        submission_id: submission.id,
+        form_template_id: submission.form_template_id,
+        form_template_name: template?.name ?? null,
+        status: submission.status,
+        submitted_by: submission.submitted_by,
+        submitted_at: submission.submitted_at,
+      },
+    };
+  }
+
+  async updateStatus(
+    id: string,
+    data: UpdateSubmissionStatusInput
+  ): Promise<FormSubmission | null> {
+    return AppDataSource.transaction(async (transactionalEntityManager) => {
+      const submissionRepository =
+        transactionalEntityManager.getRepository(FormSubmission);
+      const statusHistoryRepository =
+        transactionalEntityManager.getRepository(SubmissionStatusHistory);
+
+      const submission = await submissionRepository.findOneBy({ id });
+
+      if (!submission) {
+        return null;
+      }
+
+      if (submission.status === data.status) {
+        return submission;
+      }
+
+      const previousStatus = submission.status;
+
+      const isTransitionAllowed = this.isStatusTransitionAllowed(
+        previousStatus,
+        data.status
+      );
+
+      if (!isTransitionAllowed) {
+        throw new Error(INVALID_STATUS_TRANSITION_ERROR);
+      }
+
+      submission.status = data.status;
+
+      const updatedSubmission = await submissionRepository.save(submission);
+
+      const history = statusHistoryRepository.create({
+        submission_id: updatedSubmission.id,
+        previous_status: previousStatus,
+        new_status: data.status,
+        changed_by:
+          data.changed_by?.trim() ||
+          updatedSubmission.submitted_by ||
+          null,
+      });
+
+      await statusHistoryRepository.save(history);
+
+      return updatedSubmission;
+    });
+  }
+
+  async findHistoryBySubmissionId(
+    submissionId: string
+  ): Promise<SubmissionStatusHistory[]> {
+    return this.statusHistoryRepository.find({
+      where: { submission_id: submissionId },
+      order: { changed_at: "ASC" },
+    });
+  }
+
+  private isStatusTransitionAllowed(
+    currentStatus: FormSubmissionStatus,
+    nextStatus: FormSubmissionStatus
+  ): boolean {
+    const allowedNextStatuses = ALLOWED_STATUS_TRANSITIONS[currentStatus] ?? [];
+    return allowedNextStatuses.includes(nextStatus);
+  }
+
+  private buildReadableAnswers(
+    fields: FormFieldLike[] | undefined,
+    data: FormSubmissionData
+  ): ReadableSubmissionAnswer[] {
+    if (!Array.isArray(fields)) {
+      return [];
+    }
+
+    const answers: ReadableSubmissionAnswer[] = [];
+
+    const walk = (fieldList: FormFieldLike[], sectionLabel: string | null) => {
+      const orderedFields = [...fieldList].sort((a, b) => {
+        const orderA = typeof a.order === "number" ? a.order : 0;
+        const orderB = typeof b.order === "number" ? b.order : 0;
+
+        return orderA - orderB;
+      });
+
+      for (const field of orderedFields) {
+        const label = this.getFieldLabel(field);
+
+        if (Array.isArray(field.fields)) {
+          walk(field.fields, label || sectionLabel);
+          continue;
+        }
+
+        if (!this.isAnswerableField(field)) {
+          continue;
+        }
+
+        const fieldId = field.id as string;
+        const value = data[fieldId];
+
+        answers.push({
+          field_id: fieldId,
+          label: label || "Campo sem nome",
+          type: field.type || "unknown",
+          section: sectionLabel,
+          value: value ?? null,
+          required: Boolean(field.required),
+          order: typeof field.order === "number" ? field.order : null,
+          has_answer: this.hasAnswer(value),
+        });
+      }
+    };
+
+    walk(fields, null);
+
+    return answers;
+  }
+
+  private getFieldLabel(field: FormFieldLike): string {
+    if (typeof field.label === "string" && field.label.trim().length > 0) {
+      return field.label.trim();
+    }
+
+    if (typeof field.name === "string" && field.name.trim().length > 0) {
+      return field.name.trim();
+    }
+
+    return "";
+  }
+
+  private isAnswerableField(field: FormFieldLike): boolean {
+    if (!field.id || typeof field.id !== "string") {
+      return false;
+    }
+
+    if (!field.type || typeof field.type !== "string") {
+      return false;
+    }
+
+    return !STRUCTURAL_FIELD_TYPES.has(field.type);
+  }
+
+  private hasAnswer(value: unknown): boolean {
+    if (value === undefined || value === null) {
+      return false;
+    }
+
+    if (typeof value === "string") {
+      return value.trim().length > 0;
+    }
+
+    if (Array.isArray(value)) {
+      return value.length > 0;
+    }
+
+    return true;
   }
 }
