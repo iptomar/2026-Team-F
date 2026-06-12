@@ -1,5 +1,8 @@
 import { Request, Response } from "express";
-import { FormSubmissionStatus } from "../models/FormSubmission";
+import {
+  FormSubmissionData,
+  FormSubmissionStatus,
+} from "../models/FormSubmission";
 import {
   FindSubmissionsFilters,
   FormSubmissionService,
@@ -32,6 +35,154 @@ function validateChangedBy(changedBy: unknown): string | null {
   }
 
   return null;
+}
+
+function getTrimmedStringValue(value: unknown): string | undefined {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+
+  const trimmedValue = value.trim();
+
+  return trimmedValue.length > 0 ? trimmedValue : undefined;
+}
+
+function validateFormTemplateId(
+  formTemplateId: unknown
+): { value?: string; error?: string } {
+  const trimmedFormTemplateId = getTrimmedStringValue(formTemplateId);
+
+  if (!trimmedFormTemplateId) {
+    return {
+      error: "O campo 'form_template_id' é obrigatório.",
+    };
+  }
+
+  if (trimmedFormTemplateId.length > 36) {
+    return {
+      error: "O campo 'form_template_id' não pode exceder 36 caracteres.",
+    };
+  }
+
+  return {
+    value: trimmedFormTemplateId,
+  };
+}
+
+function validateSubmittedBy(
+  submittedBy: unknown
+): { value?: string | null; error?: string } {
+  if (submittedBy === undefined || submittedBy === null) {
+    return {
+      value: null,
+    };
+  }
+
+  if (typeof submittedBy !== "string") {
+    return {
+      error: "O campo 'submitted_by' deve ser uma string ou null.",
+    };
+  }
+
+  const trimmedSubmittedBy = submittedBy.trim();
+
+  if (trimmedSubmittedBy.length === 0) {
+    return {
+      value: null,
+    };
+  }
+
+  if (trimmedSubmittedBy.length > 255) {
+    return {
+      error: "O campo 'submitted_by' não pode exceder 255 caracteres.",
+    };
+  }
+
+  return {
+    value: trimmedSubmittedBy,
+  };
+}
+
+function isObjectRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isValidSubmissionArrayValue(value: unknown[]): value is string[] {
+  return value.every((item) => typeof item === "string");
+}
+
+function validateAndNormalizeSubmissionData(
+  data: unknown
+): { value?: FormSubmissionData; error?: string } {
+  if (!isObjectRecord(data)) {
+    return {
+      error: "O campo 'data' deve ser um objeto com as respostas.",
+    };
+  }
+
+  const normalizedData: FormSubmissionData = {};
+
+  for (const [fieldId, fieldValue] of Object.entries(data)) {
+    const trimmedFieldId = fieldId.trim();
+
+    if (trimmedFieldId.length === 0) {
+      return {
+        error: "O campo 'data' contém um identificador de campo inválido.",
+      };
+    }
+
+    if (fieldValue === undefined) {
+      return {
+        error: `A resposta do campo '${trimmedFieldId}' não pode ser undefined.`,
+      };
+    }
+
+    if (fieldValue === null) {
+      normalizedData[trimmedFieldId] = null;
+      continue;
+    }
+
+    if (typeof fieldValue === "string") {
+      normalizedData[trimmedFieldId] = fieldValue;
+      continue;
+    }
+
+    if (typeof fieldValue === "boolean") {
+      normalizedData[trimmedFieldId] = fieldValue;
+      continue;
+    }
+
+    if (typeof fieldValue === "number") {
+      if (!Number.isFinite(fieldValue)) {
+        return {
+          error: `A resposta do campo '${trimmedFieldId}' deve ser um número válido.`,
+        };
+      }
+
+      normalizedData[trimmedFieldId] = fieldValue;
+      continue;
+    }
+
+    if (Array.isArray(fieldValue)) {
+      if (!isValidSubmissionArrayValue(fieldValue)) {
+        return {
+          error: `A resposta do campo '${trimmedFieldId}' deve ser uma lista de strings.`,
+        };
+      }
+
+      normalizedData[trimmedFieldId] = fieldValue;
+      continue;
+    }
+
+    return {
+      error:
+        `A resposta do campo '${trimmedFieldId}' deve ser string, number, boolean, lista de strings ou null.`,
+    };
+  }
+
+  return {
+    value: normalizedData,
+  };
 }
 
 function getQueryStringValue(value: unknown): string | undefined {
@@ -150,24 +301,31 @@ export class FormSubmissionController {
     try {
       const { form_template_id, data, submitted_by } = req.body;
 
-      if (!form_template_id || typeof form_template_id !== "string") {
-        res.status(400).json({
-          error: "O campo 'form_template_id' é obrigatório.",
-        });
+      const formTemplateIdResult = validateFormTemplateId(form_template_id);
+
+      if (formTemplateIdResult.error || !formTemplateIdResult.value) {
+        res.status(400).json({ error: formTemplateIdResult.error });
         return;
       }
 
-      if (!data || typeof data !== "object" || Array.isArray(data)) {
-        res.status(400).json({
-          error: "O campo 'data' deve ser um objeto com as respostas.",
-        });
+      const dataResult = validateAndNormalizeSubmissionData(data);
+
+      if (dataResult.error || !dataResult.value) {
+        res.status(400).json({ error: dataResult.error });
+        return;
+      }
+
+      const submittedByResult = validateSubmittedBy(submitted_by);
+
+      if (submittedByResult.error) {
+        res.status(400).json({ error: submittedByResult.error });
         return;
       }
 
       const submission = await service.create({
-        form_template_id,
-        data,
-        submitted_by: submitted_by ?? null,
+        form_template_id: formTemplateIdResult.value,
+        data: dataResult.value,
+        submitted_by: submittedByResult.value ?? null,
       });
 
       if (!submission) {
