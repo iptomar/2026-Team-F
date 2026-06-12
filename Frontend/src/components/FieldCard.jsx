@@ -1,4 +1,10 @@
-import React, { useState } from "react";
+// ======================================================
+// FRONTEND/src/components/FieldCard.jsx
+// Card de campo — posicionamento absoluto, drag e resize
+// com snap à grelha (#119 + #128)
+// ======================================================
+
+import React, { useRef, useState } from "react";
 import {
   CheckSquare,
   ChevronDown,
@@ -16,11 +22,28 @@ import {
   X,
 } from "lucide-react";
 
+// ======================================================
+// CONSTANTES
+// ======================================================
+const GRID_SIZE = 20;
+const MIN_FIELD_WIDTH = 100;
+const MIN_FIELD_HEIGHT = 60;
+const DEFAULT_FIELD_WIDTH = 320;
+
+/**
+ * Arredonda `value` ao múltiplo de `gridSize` mais próximo.
+ * Usado em drag e resize para aplicar snap à grelha.
+ */
+const snapToGrid = (value, gridSize = GRID_SIZE) =>
+  Math.round(value / gridSize) * gridSize;
+
+// ======================================================
+// COMPONENTE
+// ======================================================
 const FieldCard = ({
   field,
   index,
   totalFields,
-  reordenarCamposArrastados,
   moverCampo,
   editingId,
   editData,
@@ -34,10 +57,22 @@ const FieldCard = ({
   removeOption,
   addOption,
   renderField,
+  // Props de seleção (#128)
+  isSelected,
+  onSelect,
+  // Props de drag & resize (#119)
+  onPositionChange,
+  onSizeChange,
+  zoomScale,
 }) => {
-  const [isDragOver, setIsDragOver] = useState(false);
+  const cardRef = useRef(null);
   const [isActionsOpen, setIsActionsOpen] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [isResizing, setIsResizing] = useState(false);
 
+  // ======================================================
+  // METADADOS VISUAIS POR TIPO
+  // ======================================================
   const fieldMeta = {
     [FIELD_TYPES.LABEL]: {
       icon: Type,
@@ -74,42 +109,141 @@ const FieldCard = ({
 
   const Icon = meta.icon;
 
-  const handleDragStart = (event) => {
-    event.dataTransfer.setData("text/plain", index);
-    event.dataTransfer.effectAllowed = "move";
-    event.currentTarget.style.opacity = "0.55";
+  // ======================================================
+  // SELEÇÃO — wrapper captura pointer sem propagar ao canvas
+  // ======================================================
+  const handleWrapperPointerDown = (e) => {
+    // Só propaga a seleção; o drag handle tem o seu próprio handler
+    e.stopPropagation();
+    onSelect?.(field.id);
   };
 
-  const handleDragEnd = (event) => {
-    event.currentTarget.style.opacity = "1";
-    setIsDragOver(false);
+  // ======================================================
+  // DRAG — arrastar o campo pela folha (#119)
+  // ======================================================
+  const handleDragHandlePointerDown = (e) => {
+    // Só botão principal do rato
+    if (e.button !== 0) return;
+    e.preventDefault();
+    e.stopPropagation();
+
+    onSelect?.(field.id);
+
+    // Posição inicial do campo e do rato no momento do clique
+    const startMX = e.clientX;
+    const startMY = e.clientY;
+    const startX = typeof field.x === "number" ? field.x : 0;
+    const startY = typeof field.y === "number" ? field.y : index * 110;
+
+    // A escala do canvas afeta a relação px-écran ↔ px-canvas
+    const scale = zoomScale || 1;
+
+    setIsDragging(true);
+    document.body.style.cursor = "grabbing";
+    document.body.style.userSelect = "none";
+
+    // ── Movimento live (sem snap — suave ao rato) ───────────────
+    const onPointerMove = (me) => {
+      const rawX = Math.max(0, startX + (me.clientX - startMX) / scale);
+      const rawY = Math.max(0, startY + (me.clientY - startMY) / scale);
+      onPositionChange?.(field.id, { x: rawX, y: rawY }, false);
+    };
+
+    // ── Largou: aplica snap e confirma ──────────────────────────
+    const onPointerUp = (ue) => {
+      const rawX = Math.max(0, startX + (ue.clientX - startMX) / scale);
+      const rawY = Math.max(0, startY + (ue.clientY - startMY) / scale);
+
+      onPositionChange?.(
+        field.id,
+        {
+          x: snapToGrid(rawX),
+          y: snapToGrid(rawY),
+        },
+        true, // isCommit → markUserEdited()
+      );
+
+      setIsDragging(false);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerup", onPointerUp);
+    };
+
+    window.addEventListener("pointermove", onPointerMove);
+    window.addEventListener("pointerup", onPointerUp);
   };
 
-  const handleDragOver = (event) => {
-    event.preventDefault();
-    event.stopPropagation();
+  // ======================================================
+  // RESIZE — pega no canto inferior-direito (#119)
+  // ======================================================
+  const handleResizePointerDown = (e) => {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    e.stopPropagation();
 
-    if (editingId !== field.id) {
-      setIsDragOver(true);
-    }
-  };
+    const startMX = e.clientX;
+    const startMY = e.clientY;
 
-  const handleDragLeave = () => {
-    setIsDragOver(false);
-  };
+    // Dimensão inicial: usa o valor do campo ou mede o DOM
+    const startW =
+      typeof field.width === "number"
+        ? field.width
+        : cardRef.current?.offsetWidth ?? DEFAULT_FIELD_WIDTH;
 
-  const handleDrop = (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    setIsDragOver(false);
+    const startH =
+      typeof field.height === "number"
+        ? field.height
+        : cardRef.current?.offsetHeight ?? 100;
 
-    const draggedIndex = Number(event.dataTransfer.getData("text/plain"));
+    const scale = zoomScale || 1;
 
-    if (Number.isNaN(draggedIndex)) {
-      return;
-    }
+    setIsResizing(true);
+    document.body.style.cursor = "se-resize";
+    document.body.style.userSelect = "none";
 
-    reordenarCamposArrastados(draggedIndex, index);
+    // ── Movimento live ────────────────────────────────────────────
+    const onPointerMove = (me) => {
+      const rawW = Math.max(
+        MIN_FIELD_WIDTH,
+        startW + (me.clientX - startMX) / scale,
+      );
+      const rawH = Math.max(
+        MIN_FIELD_HEIGHT,
+        startH + (me.clientY - startMY) / scale,
+      );
+      onSizeChange?.(field.id, { width: rawW, height: rawH }, false);
+    };
+
+    // ── Largou: aplica snap e confirma ──────────────────────────
+    const onPointerUp = (ue) => {
+      const rawW = Math.max(
+        MIN_FIELD_WIDTH,
+        startW + (ue.clientX - startMX) / scale,
+      );
+      const rawH = Math.max(
+        MIN_FIELD_HEIGHT,
+        startH + (ue.clientY - startMY) / scale,
+      );
+
+      onSizeChange?.(
+        field.id,
+        {
+          width: snapToGrid(rawW),
+          height: snapToGrid(rawH),
+        },
+        true, // isCommit
+      );
+
+      setIsResizing(false);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerup", onPointerUp);
+    };
+
+    window.addEventListener("pointermove", onPointerMove);
+    window.addEventListener("pointerup", onPointerUp);
   };
 
   const handleStartEditing = () => {
@@ -117,27 +251,70 @@ const FieldCard = ({
     startEditing(field);
   };
 
+  // ======================================================
+  // ESTILOS DE POSICIONAMENTO ABSOLUTO (#128)
+  // ======================================================
+  const fieldLeft = typeof field.x === "number" ? field.x : 0;
+  const fieldTop = typeof field.y === "number" ? field.y : index * 110;
+  const fieldWidth =
+    typeof field.width === "number" ? field.width : DEFAULT_FIELD_WIDTH;
+  const fieldHeight =
+    typeof field.height === "number" ? field.height : undefined;
+
+  const isInteracting = isDragging || isResizing;
+
+  // ======================================================
+  // RENDER
+  // ======================================================
   return (
     <div
-      draggable={editingId !== field.id}
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
-      className={`group bg-white border rounded-3xl shadow-sm transition-all ${
-        editingId !== field.id ? "cursor-grab active:cursor-grabbing" : ""
-      } ${
-        isDragOver
-          ? "border-indigo-400 ring-4 ring-indigo-100 scale-[1.01]"
+      ref={cardRef}
+      onPointerDown={handleWrapperPointerDown}
+      style={{
+        // — Posicionamento absoluto no canvas —
+        position: "absolute",
+        left: `${fieldLeft}px`,
+        top: `${fieldTop}px`,
+        width: `${fieldWidth}px`,
+        // Height explícito apenas quando foi redimensionado
+        ...(fieldHeight !== undefined
+          ? { height: `${fieldHeight}px`, overflow: "hidden" }
+          : {}),
+        // — Camada Z —
+        zIndex: isSelected ? 50 : 1,
+        // — Feedback visual de drag/resize —
+        opacity: isInteracting ? 0.82 : 1,
+        // Desativa transições durante interação para resposta imediata
+        transition: isInteracting
+          ? "none"
+          : "box-shadow 0.15s ease, opacity 0.12s ease",
+        borderRadius: "1.5rem",
+        // — Anel de seleção (#128) —
+        ...(isSelected
+          ? {
+              outline: "2.5px solid #6366f1",
+              boxShadow:
+                "0 0 0 4px rgba(99,102,241,0.18), 0 8px 32px 0 rgba(99,102,241,0.14)",
+            }
+          : {}),
+      }}
+      className={`group bg-white border shadow-sm ${
+        isSelected
+          ? "border-indigo-400"
           : "border-slate-200 hover:border-indigo-200 hover:shadow-md"
       }`}
     >
+      {/* ==================================================
+          MODO EDIÇÃO
+          ================================================== */}
       {editingId === field.id ? (
         <div className="p-5 space-y-5">
+          {/* Cabeçalho da edição */}
           <div className="flex items-center justify-between border-b border-slate-100 pb-4">
             <div className="flex items-center gap-3">
-              <span className={`h-11 w-11 rounded-2xl border flex items-center justify-center ${meta.iconBox}`}>
+              <span
+                className={`h-11 w-11 rounded-2xl border flex items-center justify-center ${meta.iconBox}`}
+              >
                 <Icon size={20} />
               </span>
 
@@ -161,108 +338,84 @@ const FieldCard = ({
             </button>
           </div>
 
-          
+          {/* Descrição */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Descrição
+            </label>
+            <textarea
+              onPointerDown={(e) => e.stopPropagation()}
+              value={editData.description || ""}
+              onChange={(e) =>
+                setEditData({ ...editData, description: e.target.value })
+              }
+              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
 
-   {/* INPUT LABEL */}
+          {/* Tamanho da fonte */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Tamanho da Fonte
+            </label>
+            <input
+              type="number"
+              onPointerDown={(e) => e.stopPropagation()}
+              value={editData.fontSize || 20}
+              onChange={(e) =>
+                setEditData({ ...editData, fontSize: Number(e.target.value) })
+              }
+              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
 
-<div>
+          {/* Peso da fonte */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Peso da Fonte
+            </label>
+            <select
+              onPointerDown={(e) => e.stopPropagation()}
+              value={editData.fontWeight || "bold"}
+              onChange={(e) =>
+                setEditData({ ...editData, fontWeight: e.target.value })
+              }
+              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              <option value="normal">Normal</option>
+              <option value="bold">Bold</option>
+            </select>
+          </div>
 
-  <label className="block text-sm font-semibold text-gray-700 mb-2">
-    Descrição
-  </label>
+          {/* Alinhamento */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Alinhamento
+            </label>
+            <select
+              onPointerDown={(e) => e.stopPropagation()}
+              value={editData.textAlign || "left"}
+              onChange={(e) =>
+                setEditData({ ...editData, textAlign: e.target.value })
+              }
+              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              <option value="left">Esquerda</option>
+              <option value="center">Centro</option>
+              <option value="right">Direita</option>
+            </select>
+          </div>
 
-  <textarea
-    value={editData.description || ""}
-    onChange={(e) =>
-      setEditData({
-        ...editData,
-        description: e.target.value
-      })
-    }
-    className="w-full border border-gray-300 rounded-lg px-4 py-2"
-  />
-
-</div>
-
-
-<div>
-
-  <label className="block text-sm font-semibold text-gray-700 mb-2">
-    Tamanho da Fonte
-  </label>
-
-  <input
-    type="number"
-    value={editData.fontSize || 20}
-    onChange={(e) =>
-      setEditData({
-        ...editData,
-        fontSize: Number(e.target.value)
-      })
-    }
-    className="w-full border border-gray-300 rounded-lg px-4 py-2"
-  />
-
-</div>
-
-
-<div>
-
-  <label className="block text-sm font-semibold text-gray-700 mb-2">
-    Peso da Fonte
-  </label>
-
-  <select
-    value={editData.fontWeight || "bold"}
-    onChange={(e) =>
-      setEditData({
-        ...editData,
-        fontWeight: e.target.value
-      })
-    }
-    className="w-full border border-gray-300 rounded-lg px-4 py-2"
-  >
-    <option value="normal">Normal</option>
-    <option value="bold">Bold</option>
-  </select>
-
-</div>
-
-
-<div>
-
-  <label className="block text-sm font-semibold text-gray-700 mb-2">
-    Alinhamento
-  </label>
-
-  <select
-    value={editData.textAlign || "left"}
-    onChange={(e) =>
-      setEditData({
-        ...editData,
-        textAlign: e.target.value
-      })
-    }
-    className="w-full border border-gray-300 rounded-lg px-4 py-2"
-  >
-    <option value="left">Esquerda</option>
-    <option value="center">Centro</option>
-    <option value="right">Direita</option>
-  </select>
-
-</div>
-
-{/* INPUT LABEL */}
-
-
-
+          {/* Nome / Texto da label */}
           <div>
             <label className="block text-sm font-black text-slate-700 mb-2">
-              {field.type === FIELD_TYPES.LABEL ? "Texto da label" : "Nome do campo"}
+              {field.type === FIELD_TYPES.LABEL
+                ? "Texto da label"
+                : "Nome do campo"}
             </label>
-
             <input
               type="text"
+              onPointerDown={(e) => e.stopPropagation()}
               value={editData.label || ""}
               onChange={(event) =>
                 setEditData({ ...editData, label: event.target.value })
@@ -276,17 +429,18 @@ const FieldCard = ({
             />
           </div>
 
+          {/* Campo obrigatório */}
           {field.type !== FIELD_TYPES.LABEL && (
             <label className="flex items-center gap-3 bg-slate-50 border border-slate-200 p-4 rounded-2xl cursor-pointer hover:bg-slate-100 transition">
               <input
                 type="checkbox"
+                onPointerDown={(e) => e.stopPropagation()}
                 checked={editData.required || false}
                 onChange={(event) =>
                   setEditData({ ...editData, required: event.target.checked })
                 }
                 className="w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500"
               />
-
               <span>
                 <span className="block text-sm font-bold text-slate-800">
                   Campo obrigatório
@@ -298,6 +452,7 @@ const FieldCard = ({
             </label>
           )}
 
+          {/* Opções (radio, dropdown, checkbox) */}
           {(editData.type === FIELD_TYPES.RADIO ||
             editData.type === FIELD_TYPES.DROPDOWN ||
             editData.type === FIELD_TYPES.CHECKBOX) && (
@@ -305,12 +460,12 @@ const FieldCard = ({
               <label className="block text-sm font-black text-slate-700 mb-2">
                 Opções
               </label>
-
               <div className="space-y-2">
                 {(editData.options || []).map((opt, indexOpt) => (
                   <div key={indexOpt} className="flex gap-2">
                     <input
                       type="text"
+                      onPointerDown={(e) => e.stopPropagation()}
                       value={opt}
                       onChange={(event) =>
                         updateOption(indexOpt, event.target.value)
@@ -318,7 +473,6 @@ const FieldCard = ({
                       className="flex-1 border border-slate-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
                       placeholder={`Opção ${indexOpt + 1}`}
                     />
-
                     <button
                       type="button"
                       onClick={() => removeOption(indexOpt)}
@@ -330,7 +484,6 @@ const FieldCard = ({
                   </div>
                 ))}
               </div>
-
               <button
                 type="button"
                 onClick={addOption}
@@ -342,6 +495,7 @@ const FieldCard = ({
             </div>
           )}
 
+          {/* Ações de guardar / cancelar */}
           <div className="flex flex-wrap gap-3 pt-3 border-t border-slate-100">
             <button
               type="button"
@@ -351,7 +505,6 @@ const FieldCard = ({
               <Save size={17} />
               <span>Guardar</span>
             </button>
-
             <button
               type="button"
               onClick={cancelEditing}
@@ -363,111 +516,179 @@ const FieldCard = ({
           </div>
         </div>
       ) : (
-        <div className="p-4">
-          <div className="flex items-center justify-between gap-3 mb-3">
-            <div className="flex items-center gap-3 min-w-0">
-              <button
-                type="button"
-                onClick={() => setIsActionsOpen((previous) => !previous)}
-                className={`h-11 w-11 rounded-2xl border flex items-center justify-center shrink-0 hover:scale-105 transition ${meta.iconBox}`}
-                title={`Opções de ${meta.label}`}
-              >
-                <Icon size={21} />
-              </button>
+        /* ==================================================
+           MODO VISUALIZAÇÃO + DRAG HANDLE
+           ================================================== */
+        <div className="flex flex-col">
+          {/* ── Barra superior: drag handle + info + actions ── */}
+          <div className="flex items-center gap-2 px-3 pt-3 pb-2">
+            {/* ─────────────────────────────────────────────────
+                DRAG HANDLE (#119)
+                Área dedicada para arrastar o campo.
+                stopPropagation evita conflito com seleção.
+                ───────────────────────────────────────────── */}
+            <div
+              onPointerDown={handleDragHandlePointerDown}
+              className="h-9 w-7 flex items-center justify-center shrink-0 rounded-lg text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 transition select-none"
+              style={{
+                cursor: isDragging ? "grabbing" : "grab",
+                touchAction: "none",
+              }}
+              title="Arrastar para mover"
+            >
+              <GripVertical size={17} />
+            </div>
 
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-black ${meta.badge}`}>
-                    <Icon size={13} />
-                    <span>{meta.label}</span>
+            {/* Ícone do tipo (abre menu de ações) */}
+            <button
+              type="button"
+              onClick={() => setIsActionsOpen((p) => !p)}
+              className={`h-10 w-10 rounded-2xl border flex items-center justify-center shrink-0 hover:scale-105 transition ${meta.iconBox}`}
+              title={`Opções de ${meta.label}`}
+            >
+              <Icon size={20} />
+            </button>
+
+            {/* Info: tipo, ordem, obrigatório, selecionado */}
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span
+                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-xs font-black ${meta.badge}`}
+                >
+                  <Icon size={11} />
+                  <span>{meta.label}</span>
+                </span>
+
+                <span className="inline-flex items-center rounded-full bg-slate-100 text-slate-500 px-2 py-0.5 text-xs font-bold">
+                  #{field.order || index + 1}
+                </span>
+
+                {field.required && (
+                  <span className="inline-flex items-center gap-0.5 rounded-full bg-red-50 text-red-700 border border-red-100 px-2 py-0.5 text-xs font-bold">
+                    <span>*</span>
+                    <span>Obrigatório</span>
                   </span>
+                )}
 
-                  <span className="inline-flex items-center rounded-full bg-slate-100 text-slate-500 px-2.5 py-1 text-xs font-bold">
-                    Ordem #{field.order || index + 1}
+                {/* Indicador de seleção ativo */}
+                {isSelected && (
+                  <span className="inline-flex items-center rounded-full bg-indigo-600 text-white px-2 py-0.5 text-xs font-bold">
+                    Selecionado
                   </span>
-
-                  {field.required && (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-red-50 text-red-700 border border-red-100 px-2.5 py-1 text-xs font-bold">
-                      <span>*</span>
-                      <span>Obrigatório</span>
-                    </span>
-                  )}
-                </div>
-
-                <p className="text-xs text-slate-500 mt-1 truncate">
-                  {field.label || "Campo sem nome"}
-                </p>
+                )}
               </div>
+              <p className="text-xs text-slate-500 mt-0.5 truncate">
+                {field.label || "Campo sem nome"}
+              </p>
             </div>
 
-            <div className="flex items-center gap-2">
-              <span
-                className="h-9 w-9 rounded-xl bg-slate-50 border border-slate-200 text-slate-400 flex items-center justify-center select-none"
-                title="Arraste para reordenar"
-              >
-                <GripVertical size={18} />
-              </span>
-
-              <button
-                type="button"
-                onClick={() => setIsActionsOpen((previous) => !previous)}
-                className="h-9 w-9 rounded-xl bg-slate-50 border border-slate-200 text-slate-500 hover:bg-slate-100 hover:text-slate-800 inline-flex items-center justify-center transition"
-                title="Mostrar opções"
-              >
-                <MoreHorizontal size={18} />
-              </button>
-            </div>
+            {/* Botão de opções (···) */}
+            <button
+              type="button"
+              onClick={() => setIsActionsOpen((p) => !p)}
+              className="h-8 w-8 rounded-xl bg-slate-50 border border-slate-200 text-slate-500 hover:bg-slate-100 hover:text-slate-800 inline-flex items-center justify-center transition shrink-0"
+              title="Mais opções"
+            >
+              <MoreHorizontal size={16} />
+            </button>
           </div>
 
+          {/* ── Menu de ações (expandível) ── */}
           {isActionsOpen && (
-            <div className="mb-3 rounded-2xl border border-slate-200 bg-slate-50 p-3 flex flex-wrap gap-2 items-center justify-between">
-              <div className="flex flex-wrap gap-2">
+            <div className="mx-3 mb-2 rounded-2xl border border-slate-200 bg-slate-50 p-2.5 flex flex-wrap gap-2 items-center justify-between">
+              <div className="flex flex-wrap gap-1.5">
                 <button
                   type="button"
                   onClick={() => moverCampo(index, "cima")}
                   disabled={index === 0}
-                  title="Mover para cima"
-                  className="h-9 w-9 inline-flex items-center justify-center bg-white border border-slate-200 text-indigo-600 rounded-xl hover:bg-indigo-50 disabled:opacity-30 disabled:hover:bg-white font-black transition-all text-sm"
+                  title="Diminuir ordem"
+                  className="h-8 w-8 inline-flex items-center justify-center bg-white border border-slate-200 text-indigo-600 rounded-xl hover:bg-indigo-50 disabled:opacity-30 disabled:hover:bg-white transition text-sm"
                 >
-                  <MoveUp size={16} />
+                  <MoveUp size={15} />
                 </button>
-
                 <button
                   type="button"
                   onClick={() => moverCampo(index, "baixo")}
                   disabled={index === totalFields - 1}
-                  title="Mover para baixo"
-                  className="h-9 w-9 inline-flex items-center justify-center bg-white border border-slate-200 text-indigo-600 rounded-xl hover:bg-indigo-50 disabled:opacity-30 disabled:hover:bg-white font-black transition-all text-sm"
+                  title="Aumentar ordem"
+                  className="h-8 w-8 inline-flex items-center justify-center bg-white border border-slate-200 text-indigo-600 rounded-xl hover:bg-indigo-50 disabled:opacity-30 disabled:hover:bg-white transition text-sm"
                 >
-                  <MoveDown size={16} />
+                  <MoveDown size={15} />
                 </button>
               </div>
 
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-1.5">
                 <button
                   type="button"
                   onClick={handleStartEditing}
-                  className="inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 border border-blue-100 px-3 py-2 rounded-xl hover:bg-blue-100 transition-all text-sm font-bold"
+                  className="inline-flex items-center gap-1 bg-blue-50 text-blue-700 border border-blue-100 px-2.5 py-1.5 rounded-xl hover:bg-blue-100 transition text-xs font-bold"
                 >
-                  <Edit3 size={15} />
+                  <Edit3 size={13} />
                   <span>Editar</span>
                 </button>
-
                 <button
                   type="button"
                   onClick={() => deleteField(field.id)}
-                  className="inline-flex items-center gap-1.5 bg-red-50 text-red-700 border border-red-100 px-3 py-2 rounded-xl hover:bg-red-100 transition-all text-sm font-bold"
+                  className="inline-flex items-center gap-1 bg-red-50 text-red-700 border border-red-100 px-2.5 py-1.5 rounded-xl hover:bg-red-100 transition text-xs font-bold"
                 >
-                  <Trash2 size={15} />
+                  <Trash2 size={13} />
                   <span>Remover</span>
                 </button>
               </div>
             </div>
           )}
 
-          <div className="rounded-2xl border border-slate-100 bg-slate-50/60 p-4">
+          {/* ── Pré-visualização do campo ── */}
+          <div className="mx-3 mb-3 rounded-2xl border border-slate-100 bg-slate-50/60 p-3">
             {renderField(field)}
           </div>
+        </div>
+      )}
+
+      {/* ====================================================
+          PEGA DE REDIMENSIONAMENTO — canto inferior-direito (#119)
+          Visível apenas quando o campo está selecionado e
+          não está em modo de edição.
+          ==================================================== */}
+      {isSelected && editingId !== field.id && (
+        <div
+          onPointerDown={handleResizePointerDown}
+          title="Redimensionar campo"
+          style={{
+            position: "absolute",
+            right: 0,
+            bottom: 0,
+            width: "18px",
+            height: "18px",
+            cursor: "se-resize",
+            zIndex: 60,
+            // Forma de triângulo no canto: visual clean
+            background:
+              "linear-gradient(135deg, transparent 50%, #6366f1 50%)",
+            borderRadius: "0 0 1.5rem 0",
+            touchAction: "none",
+          }}
+        />
+      )}
+
+      {/* ====================================================
+          INDICADOR DE POSIÇÃO (#119)
+          Mostra coords enquanto arrasta ou redimensiona.
+          ==================================================== */}
+      {isInteracting && (
+        <div
+          style={{
+            position: "absolute",
+            top: "-28px",
+            left: "0",
+            pointerEvents: "none",
+            whiteSpace: "nowrap",
+          }}
+          className="bg-indigo-600 text-white text-[10px] font-black px-2 py-0.5 rounded-md shadow"
+        >
+          {isDragging
+            ? `x: ${Math.round(fieldLeft)} · y: ${Math.round(fieldTop)}`
+            : `${Math.round(fieldWidth)} × ${Math.round(fieldHeight ?? (cardRef.current?.offsetHeight ?? 0))} px`}
         </div>
       )}
     </div>

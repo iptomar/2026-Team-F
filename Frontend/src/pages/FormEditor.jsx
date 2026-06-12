@@ -54,6 +54,13 @@ const FIELD_TYPES = {
   TEXT: 'text',
 };
 
+// ======================================================
+// CONSTANTES DE GRELHA — SNAP TO GRID (#119)
+// ======================================================
+const GRID_SIZE = 20;
+const MIN_FIELD_WIDTH = 100;
+const MIN_FIELD_HEIGHT = 60;
+
 const PAGE_SIZES = {
   A4: {
     label: 'A4',
@@ -217,6 +224,11 @@ const FormEditor = ({ formId, onGoHome }) => {
   const [fields, setFields] = useState([]);
   const [editingId, setEditingId] = useState(null);
   const [editData, setEditData] = useState({});
+
+  // ======================================================
+  // SELEÇÃO NO CANVAS ABSOLUTO (#128)
+  // ======================================================
+  const [selectedFieldId, setSelectedFieldId] = useState(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -649,6 +661,23 @@ const FormEditor = ({ formId, onGoHome }) => {
   };
 
   // ======================================================
+  // POSIÇÃO E DIMENSÕES — DRAG & RESIZE (#119)
+  // ======================================================
+  const handleFieldPositionChange = (id, { x, y }, isCommit = false) => {
+    setFields((prev) =>
+      prev.map((f) => (f.id === id ? { ...f, x, y } : f))
+    );
+    if (isCommit) markUserEdited();
+  };
+
+  const handleFieldSizeChange = (id, { width, height }, isCommit = false) => {
+    setFields((prev) =>
+      prev.map((f) => (f.id === id ? { ...f, width, height } : f))
+    );
+    if (isCommit) markUserEdited();
+  };
+
+  // ======================================================
   // OPÇÕES
   // ======================================================
   const addOption = () => {
@@ -719,6 +748,7 @@ const FormEditor = ({ formId, onGoHome }) => {
   // ADICIONAR NOVO CAMPO
   // ======================================================
   const addField = (type) => {
+    const newIndex = fields.length;
     const newField = {
       id: crypto.randomUUID(),
       type,
@@ -727,11 +757,16 @@ const FormEditor = ({ formId, onGoHome }) => {
       options: (type === FIELD_TYPES.RADIO || type === FIELD_TYPES.DROPDOWN)
         ? ['Opção 1']
         : [],
-      order: fields.length + 1,
+      order: newIndex + 1,
+      // Coordenadas absolutas por omissão (#128)
+      x: 40,
+      y: newIndex * 110 + 40,
+      width: 320,
     };
 
     markUserEdited();
     setFields((prevFields) => [...prevFields, newField]);
+    setSelectedFieldId(newField.id);
     showToast('Campo adicionado ao formulário.', 'success');
   };
 
@@ -1391,52 +1426,60 @@ const FormEditor = ({ formId, onGoHome }) => {
                     ...pageGridStyle,
                   }}
                 >
-                  <div className="relative min-h-full p-8 border-2 border-transparent transition-all">
-                    <div className="relative z-10">
-                      {fields.length === 0 ? (
-                        <div className="min-h-[420px] flex items-center justify-center">
-                          <div className="text-center max-w-md bg-white/90 border border-slate-200 rounded-3xl px-10 py-12 shadow-sm">
-                            <div className="mx-auto mb-5 h-16 w-16 rounded-3xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
-                              <FileText size={32} />
-                            </div>
-
-                            <h2 className="text-xl font-black text-slate-800 mb-2">
-                              O formulário ainda está vazio
-                            </h2>
-
-                            <p className="text-sm text-slate-500 leading-relaxed">
-                              Clique num componente ou arraste-o da sidebar para
-                              começar a construir a página.
-                            </p>
+                  {/* ================================================
+                      CANVAS ABSOLUTO — #128 Posicionamento absoluto
+                      ================================================ */}
+                  <div
+                    className="relative"
+                    style={{ minHeight: `${pageHeight}px` }}
+                    onPointerDown={() => setSelectedFieldId(null)}
+                  >
+                    {fields.length === 0 && (
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <div className="text-center max-w-md bg-white/90 border border-slate-200 rounded-3xl px-10 py-12 shadow-sm">
+                          <div className="mx-auto mb-5 h-16 w-16 rounded-3xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                            <FileText size={32} />
                           </div>
+
+                          <h2 className="text-xl font-black text-slate-800 mb-2">
+                            O formulário ainda está vazio
+                          </h2>
+
+                          <p className="text-sm text-slate-500 leading-relaxed">
+                            Clique num componente ou arraste-o da sidebar para
+                            começar a construir a página.
+                          </p>
                         </div>
-                      ) : (
-                        <div className="space-y-4">
-                          {fields.map((field, index) => (
-                            <FieldCard
-                              key={field.id}
-                              field={field}
-                              index={index}
-                              totalFields={fields.length}
-                              moverCampo={moverCampo}
-                              reordenarCamposArrastados={reordenarCamposArrastados}
-                              editingId={editingId}
-                              editData={editData}
-                              setEditData={setEditData}
-                              saveField={saveField}
-                              cancelEditing={cancelEditing}
-                              startEditing={startEditing}
-                              deleteField={deleteField}
-                              FIELD_TYPES={FIELD_TYPES}
-                              updateOption={updateOption}
-                              removeOption={removeOption}
-                              addOption={addOption}
-                              renderField={renderField}
-                            />
-                          ))}
-                        </div>
-                      )}
-                    </div>
+                      </div>
+                    )}
+
+                    {fields.map((field, index) => (
+                      <FieldCard
+                        key={field.id}
+                        field={field}
+                        index={index}
+                        totalFields={fields.length}
+                        moverCampo={moverCampo}
+                        reordenarCamposArrastados={reordenarCamposArrastados}
+                        editingId={editingId}
+                        editData={editData}
+                        setEditData={setEditData}
+                        saveField={saveField}
+                        cancelEditing={cancelEditing}
+                        startEditing={startEditing}
+                        deleteField={deleteField}
+                        FIELD_TYPES={FIELD_TYPES}
+                        updateOption={updateOption}
+                        removeOption={removeOption}
+                        addOption={addOption}
+                        renderField={renderField}
+                        isSelected={selectedFieldId === field.id}
+                        onSelect={setSelectedFieldId}
+                        zoomScale={effectiveZoomScale}
+                        onPositionChange={handleFieldPositionChange}
+                        onSizeChange={handleFieldSizeChange}
+                      />
+                    ))}
                   </div>
                 </div>
               </div>
