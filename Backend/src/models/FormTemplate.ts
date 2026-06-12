@@ -31,6 +31,8 @@ export type FormFieldType =
 
 export type FormFieldDefaultValue = string | number | boolean | string[] | null;
 
+export type FormFieldValidationLimit = string | number;
+
 export interface FormFieldDefinition {
   id: string;
   type: FormFieldType;
@@ -48,6 +50,22 @@ export interface FormFieldDefinition {
   placeholder?: string;
   helpText?: string;
   defaultValue?: FormFieldDefaultValue;
+
+    /**
+   * Regras opcionais de validação.
+   *
+   * min/max:
+   * - number: valores numéricos mínimos/máximos;
+   * - date: datas mínimas/máximas em string.
+   *
+   * minLength/maxLength/pattern:
+   * - text, textarea e email.
+   */
+  min?: FormFieldValidationLimit;
+  max?: FormFieldValidationLimit;
+  minLength?: number;
+  maxLength?: number;
+  pattern?: string;
 
   /**
    * Suporte opcional a secções/grupos com subcampos.

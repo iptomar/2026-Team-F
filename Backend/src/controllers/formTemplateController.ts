@@ -33,6 +33,14 @@ const allowedFieldTypes: FormFieldType[] = [
 
 const fieldTypesWithOptions: FormFieldType[] = ["radio", "dropdown"];
 
+const fieldTypesWithRangeValidation: FormFieldType[] = ["number", "date"];
+
+const fieldTypesWithTextValidation: FormFieldType[] = [
+  "text",
+  "textarea",
+  "email",
+];
+
 const allowedFieldTypesMessage = allowedFieldTypes.join(", ");
 
 function validateName(name: unknown): string | null {
@@ -161,6 +169,177 @@ function validateDefaultValue(value: unknown): string | null {
   return null;
 }
 
+function isValidDateString(value: string): boolean {
+  if (value.trim().length === 0) {
+    return false;
+  }
+
+  const parsedDate = new Date(value);
+
+  return !Number.isNaN(parsedDate.getTime());
+}
+
+function validateOptionalNonNegativeInteger(
+  value: unknown,
+  propertyName: string
+): string | null {
+  if (value === undefined) {
+    return null;
+  }
+
+  if (
+    typeof value !== "number" ||
+    !Number.isFinite(value) ||
+    !Number.isInteger(value) ||
+    value < 0
+  ) {
+    return `A propriedade '${propertyName}' deve ser um número inteiro maior ou igual a zero.`;
+  }
+
+  return null;
+}
+
+function validatePattern(value: unknown): string | null {
+  if (value === undefined) {
+    return null;
+  }
+
+  if (typeof value !== "string" || value.trim().length === 0) {
+    return "A propriedade 'pattern' deve ser uma string não vazia.";
+  }
+
+  try {
+    new RegExp(value);
+  } catch {
+    return "A propriedade 'pattern' deve conter uma expressão regular válida.";
+  }
+
+  return null;
+}
+
+function validateMinMaxValue(
+  value: unknown,
+  propertyName: string,
+  fieldType: FormFieldType
+): string | null {
+  if (value === undefined) {
+    return null;
+  }
+
+  if (fieldType === "number") {
+    if (typeof value !== "number" || !Number.isFinite(value)) {
+      return `A propriedade '${propertyName}' deve ser numérica em campos do tipo number.`;
+    }
+
+    return null;
+  }
+
+  if (fieldType === "date") {
+    if (typeof value !== "string" || !isValidDateString(value)) {
+      return `A propriedade '${propertyName}' deve ser uma data válida em campos do tipo date.`;
+    }
+
+    return null;
+  }
+
+  return `A propriedade '${propertyName}' só deve ser usada em campos do tipo number ou date.`;
+}
+
+function validateValidationRules(
+  field: Record<string, unknown>,
+  fieldType: FormFieldType,
+  currentPath: string
+): string | null {
+  const min = field.min;
+  const max = field.max;
+  const minLength = field.minLength;
+  const maxLength = field.maxLength;
+  const pattern = field.pattern;
+
+  const hasRangeValidation = min !== undefined || max !== undefined;
+
+  if (
+    hasRangeValidation &&
+    !fieldTypesWithRangeValidation.includes(fieldType)
+  ) {
+    return `${currentPath}: As propriedades 'min' e 'max' só devem ser usadas em campos do tipo number ou date.`;
+  }
+
+  const minError = validateMinMaxValue(min, "min", fieldType);
+  if (minError) {
+    return `${currentPath}: ${minError}`;
+  }
+
+  const maxError = validateMinMaxValue(max, "max", fieldType);
+  if (maxError) {
+    return `${currentPath}: ${maxError}`;
+  }
+
+  if (
+    fieldType === "number" &&
+    typeof min === "number" &&
+    typeof max === "number" &&
+    min > max
+  ) {
+    return `${currentPath}: A propriedade 'min' não pode ser superior à propriedade 'max'.`;
+  }
+
+  if (
+    fieldType === "date" &&
+    typeof min === "string" &&
+    typeof max === "string" &&
+    new Date(min) > new Date(max)
+  ) {
+    return `${currentPath}: A data em 'min' não pode ser posterior à data em 'max'.`;
+  }
+
+  const hasTextValidation =
+    minLength !== undefined ||
+    maxLength !== undefined ||
+    pattern !== undefined;
+
+  if (
+    hasTextValidation &&
+    !fieldTypesWithTextValidation.includes(fieldType)
+  ) {
+    return `${currentPath}: As propriedades 'minLength', 'maxLength' e 'pattern' só devem ser usadas em campos do tipo text, textarea ou email.`;
+  }
+
+  const minLengthError = validateOptionalNonNegativeInteger(
+    minLength,
+    "minLength"
+  );
+
+  if (minLengthError) {
+    return `${currentPath}: ${minLengthError}`;
+  }
+
+  const maxLengthError = validateOptionalNonNegativeInteger(
+    maxLength,
+    "maxLength"
+  );
+
+  if (maxLengthError) {
+    return `${currentPath}: ${maxLengthError}`;
+  }
+
+  if (
+    typeof minLength === "number" &&
+    typeof maxLength === "number" &&
+    minLength > maxLength
+  ) {
+    return `${currentPath}: A propriedade 'minLength' não pode ser superior à propriedade 'maxLength'.`;
+  }
+
+  const patternError = validatePattern(pattern);
+
+  if (patternError) {
+    return `${currentPath}: ${patternError}`;
+  }
+
+  return null;
+}
+
 function validateField(
   field: unknown,
   index: number,
@@ -227,6 +406,16 @@ function validateField(
   const defaultValueError = validateDefaultValue(defaultValue);
   if (defaultValueError) {
     return `${currentPath}: ${defaultValueError}`;
+  }
+
+    const validationRulesError = validateValidationRules(
+    field,
+    type as FormFieldType,
+    currentPath
+  );
+
+  if (validationRulesError) {
+    return validationRulesError;
   }
 
   if (options !== undefined) {
