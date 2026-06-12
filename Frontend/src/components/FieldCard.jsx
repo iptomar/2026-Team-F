@@ -161,7 +161,6 @@ const FieldCard = ({
             </button>
           </div>
 
-<<<<<<< HEAD
           
 
    {/* INPUT LABEL */}
@@ -257,8 +256,6 @@ const FieldCard = ({
 
 
 
-=======
->>>>>>> 52967b41d46f79e718beaf8555c436f74e7b6500
           <div>
             <label className="block text-sm font-black text-slate-700 mb-2">
               {field.type === FIELD_TYPES.LABEL ? "Texto da label" : "Nome do campo"}

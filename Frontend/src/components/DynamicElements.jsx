@@ -27,29 +27,6 @@ const FieldWrapper = ({ label, required, children, error }) => (
   </div>
 );
 
-<<<<<<< HEAD
-
-{/* INPUT LABEL */}
-export const FormLabel = ({
-  value,
-  description,
-  fontSize,
-  fontWeight,
-  textAlign
-}) => (
-
-  <div className="mb-6 p-2 border-l-4 border-blue-500 bg-blue-50">
-
-    <h3
-      className="text-blue-900"
-      style={{
-        fontSize: `${fontSize || 20}px`,
-        fontWeight: fontWeight || "bold",
-        textAlign: textAlign || "left"
-      }}
-    ></h3>
-
-=======
 export const FormLabel = ({ value, description }) => (
   <div className="p-5 border border-blue-100 border-l-4 border-l-blue-500 bg-gradient-to-r from-blue-50 to-white rounded-2xl">
     <h3 className="text-xl font-black text-blue-950">
@@ -61,26 +38,9 @@ export const FormLabel = ({ value, description }) => (
         {description}
       </p>
     )}
->>>>>>> 52967b41d46f79e718beaf8555c436f74e7b6500
   </div>
-
 );
 
-<<<<<<< HEAD
-
-
-
-
-
-
-
-
-{/* INPUT LABEL */}
-
-
-// 2. Componente de Grupo de Radio Buttons (Radio Group)
-export const FormRadioGroup = ({ label, options = [], required, error, isPreview }) => (
-=======
 export const FormRadioGroup = ({
   label,
   options = [],
@@ -90,7 +50,6 @@ export const FormRadioGroup = ({
   value = '',
   onChange,
 }) => (
->>>>>>> 52967b41d46f79e718beaf8555c436f74e7b6500
   <FieldWrapper label={label} required={required} error={error}>
     <div className="space-y-2">
       {options.length > 0 ? (

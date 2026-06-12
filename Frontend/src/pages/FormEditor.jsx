@@ -3,13 +3,6 @@
 // Página principal do editor de formulários
 // ======================================================
 
-import {
-  DragDropContext,
-  Droppable,
-  Draggable
-} from '@hello-pangea/dnd';
-
-import React, { useState, useEffect } from 'react';
 import React, { useState, useEffect, useRef } from 'react';
 import {
   ArrowLeft,
@@ -226,33 +219,6 @@ const FormEditor = ({ formId, onGoHome }) => {
   const [editData, setEditData] = useState({});
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-
-const handleDragEnd = (result) => {
-
-  // Se não houver destino
-  if (!result.destination) return;
-
-  // Copiar lista
-  const items = Array.from(fields);
-
-  // Remover item arrastado
-  const [reorderedItem] = items.splice(result.source.index, 1);
-
-  // Inserir nova posição
-  items.splice(result.destination.index, 0, reorderedItem);
-
-  // Atualizar ordem
-  const updatedItems = items.map((item, index) => ({
-    ...item,
-    order: index + 1
-  }));
-
-  setFields(updatedItems);
-};
-
-
-
-
 
   // Melhorias visuais/UX sem alteração de schema/backend
   const [showGrid, setShowGrid] = useState(false);
@@ -661,8 +627,6 @@ const handleDragEnd = (result) => {
   // ======================================================
   // GUARDAR ALTERAÇÕES
   // ======================================================
-  
-
   const saveField = (id) => {
     markUserEdited();
 
@@ -718,16 +682,8 @@ const handleDragEnd = (result) => {
   // ======================================================
   const renderField = (field) => {
     switch (field.type) {
-     case FIELD_TYPES.LABEL:
-      return (
-        <FormLabel
-          value={field.label}
-          description={field.description}
-          fontSize={field.fontSize}
-          fontWeight={field.fontWeight}
-          textAlign={field.textAlign}
-        />
-      );
+      case FIELD_TYPES.LABEL:
+        return <FormLabel value={field.label} />;
       case FIELD_TYPES.RADIO:
         return (
           <FormRadioGroup
@@ -762,43 +718,23 @@ const handleDragEnd = (result) => {
   // ======================================================
   // ADICIONAR NOVO CAMPO
   // ======================================================
-const addField = (type) => {
-
-  const newField = {
-
-    id: crypto.randomUUID(),
-
-    type: type,
-
-    label: `Novo campo de ${type}`,
-
-    description: "",
-
-    fontSize: 20,
-
-    fontWeight: "normal",
-
-    textAlign: "left",
-
-    required: false,
-
-    options:
-      (type === FIELD_TYPES.RADIO ||
-        type === FIELD_TYPES.DROPDOWN)
+  const addField = (type) => {
+    const newField = {
+      id: crypto.randomUUID(),
+      type,
+      label: `Novo campo de ${type}`,
+      required: false,
+      options: (type === FIELD_TYPES.RADIO || type === FIELD_TYPES.DROPDOWN)
         ? ['Opção 1']
         : [],
+      order: fields.length + 1,
+    };
 
-    order: fields.length + 1,
-
+    markUserEdited();
+    setFields((prevFields) => [...prevFields, newField]);
+    showToast('Campo adicionado ao formulário.', 'success');
   };
 
-  markUserEdited();
-
-  setFields((prevFields) => [...prevFields, newField]);
-
-  showToast('Campo adicionado ao formulário.', 'success');
-
-};
   const handleCanvasDragOver = (event) => {
     event.preventDefault();
 
@@ -829,7 +765,6 @@ const addField = (type) => {
     addField(droppedFieldType);
   };
 
-};
   // ======================================================
   // SALVAR FORMULÁRIO NO BANCO DE DADOS
   // ======================================================
@@ -1221,66 +1156,6 @@ const addField = (type) => {
                   Construa, organize e pré-visualize a estrutura do formulário.
                 </p>
 
-        <DragDropContext onDragEnd={handleDragEnd}>
-  <Droppable droppableId="form-fields">
-    {(provided) => (
-      <div
-        className="space-y-4"
-        {...provided.droppableProps}
-        ref={provided.innerRef}
-      >
-
-        {fields.map((field, index) => (
-
-          <Draggable
-            key={field.id}
-            draggableId={field.id}
-            index={index}
-          >
-            {(provided) => (
-
-              <div
-                ref={provided.innerRef}
-                {...provided.draggableProps}
-                {...provided.dragHandleProps}
-              >
-
-                <FieldCard
-                  field={field}
-
-                  editingId={editingId}
-                  editData={editData}
-                  setEditData={setEditData}
-
-                  saveField={saveField}
-                  cancelEditing={cancelEditing}
-
-                  startEditing={startEditing}
-                  deleteField={deleteField}
-
-                  FIELD_TYPES={FIELD_TYPES}
-
-                  updateOption={updateOption}
-                  removeOption={removeOption}
-                  addOption={addOption}
-
-                  renderField={renderField}
-                />
-
-              </div>
-
-            )}
-          </Draggable>
-
-        ))}
-
-        {provided.placeholder}
-
-      </div>
-    )}
-  </Droppable>
-</DragDropContext>
-    
                 {lastAutosavedAt && hasUserEdited && (
                   <p className="text-xs text-slate-400 mt-1">
                     Guardado localmente às {formatAutosaveDate(lastAutosavedAt)}.
@@ -1721,6 +1596,6 @@ const addField = (type) => {
       </div>
     </div>
   );
-
+};
 
 export default FormEditor;
