@@ -59,8 +59,10 @@ const FIELD_TYPES = {
 // ======================================================
 const GRID_SIZE = 10;
 const MAJOR_GRID_SIZE = GRID_SIZE * 5;
+const PAGE_GAP = 56;
 const MIN_FIELD_WIDTH = 100;
 const MIN_FIELD_HEIGHT = 60;
+const DEFAULT_PAGE_NUMBER = 1;
 
 const PAGE_SIZES = {
   A4: {
@@ -83,6 +85,30 @@ const PAGE_SIZES = {
 const ORIENTATIONS = {
   portrait: 'Vertical',
   landscape: 'Horizontal',
+};
+
+const getFieldPage = (field) => {
+  if (
+    field &&
+    typeof field.page === 'number' &&
+    Number.isInteger(field.page) &&
+    field.page >= 1
+  ) {
+    return field.page;
+  }
+
+  return DEFAULT_PAGE_NUMBER;
+};
+
+const getMaxPageFromFields = (fieldsToCheck) => {
+  if (!Array.isArray(fieldsToCheck) || fieldsToCheck.length === 0) {
+    return DEFAULT_PAGE_NUMBER;
+  }
+
+  return Math.max(
+    DEFAULT_PAGE_NUMBER,
+    ...fieldsToCheck.map((field) => getFieldPage(field))
+  );
 };
 
 const LOCAL_DRAFT_PREFIX = 'form-editor-autosave';
@@ -181,6 +207,7 @@ const normalizeFieldForDatabase = (field, index) => {
       : `Novo campo de ${field.type || 'campo'}`,
     required: Boolean(field.required),
     order: typeof field.order === 'number' ? field.order : index + 1,
+    page: getFieldPage(field),
   };
 
   if (fieldTypeUsesOptions(normalizedField.type)) {
@@ -239,6 +266,8 @@ const FormEditor = ({ formId, onGoHome }) => {
   const [pageFormat, setPageFormat] = useState('A4');
   const [pageOrientation, setPageOrientation] = useState('portrait');
   const [zoom, setZoom] = useState(100);
+  const [pageCount, setPageCount] = useState(1);
+  const [currentPage, setCurrentPage] = useState(1);
   const [isCanvasDragOver, setIsCanvasDragOver] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
   const [isConfigPanelCollapsed, setIsConfigPanelCollapsed] = useState(false);
@@ -272,6 +301,8 @@ const FormEditor = ({ formId, onGoHome }) => {
       fields,
       pageFormat,
       pageOrientation,
+      pageCount,
+      currentPage,
       zoom,
       showGrid,
       updatedAt: new Date().toISOString(),
@@ -320,6 +351,71 @@ const FormEditor = ({ formId, onGoHome }) => {
     setShowGrid((previous) => !previous);
   };
 
+  const handleSelectPage = (pageNumber) => {
+    setCurrentPage(pageNumber);
+    setSelectedFieldId(null);
+    setEditingId(null);
+    setEditData({});
+  };
+
+  const handleAddPage = () => {
+    markUserEdited();
+
+    setPageCount((previousPageCount) => {
+      const nextPageCount = previousPageCount + 1;
+      setCurrentPage(nextPageCount);
+      return nextPageCount;
+    });
+
+    setSelectedFieldId(null);
+    setEditingId(null);
+    setEditData({});
+    showToast('Nova página adicionada ao formulário.', 'success');
+  };
+
+  const handleRemoveCurrentPage = () => {
+    const hasFieldsOnCurrentPage = fields.some(
+      (field) => getFieldPage(field) === currentPage
+    );
+
+    if (pageCount <= 1) {
+      showToast('O formulário deve ter pelo menos uma página.', 'error');
+      return;
+    }
+
+    if (hasFieldsOnCurrentPage) {
+      showToast('Só é possível remover páginas vazias.', 'error');
+      return;
+    }
+
+    markUserEdited();
+
+    setFields((previousFields) =>
+      previousFields.map((field) => {
+        const fieldPage = getFieldPage(field);
+
+        if (fieldPage > currentPage) {
+          return {
+            ...field,
+            page: fieldPage - 1,
+          };
+        }
+
+        return field;
+      })
+    );
+
+    setPageCount((previousPageCount) => Math.max(1, previousPageCount - 1));
+    setCurrentPage((previousCurrentPage) =>
+      Math.max(1, Math.min(previousCurrentPage, pageCount - 1))
+    );
+
+    setSelectedFieldId(null);
+    setEditingId(null);
+    setEditData({});
+    showToast('Página removida com sucesso.', 'info');
+  };
+
   const handleGoHomeWithAutosave = () => {
     saveLocalDraftNow();
 
@@ -336,9 +432,22 @@ const FormEditor = ({ formId, onGoHome }) => {
     setCurrentFormId(draft.currentFormId || formId || null);
     setFormName(draft.formName || 'Meu Formulário');
     setFormDescription(draft.formDescription || '');
-    setFields(Array.isArray(draft.fields) ? draft.fields : []);
     setPageFormat(draft.pageFormat || 'A4');
     setPageOrientation(draft.pageOrientation || 'portrait');
+    const draftFields = Array.isArray(draft.fields) ? draft.fields : [];
+    setFields(draftFields);
+    const draftPageCount = Math.max(
+      1,
+      typeof draft.pageCount === 'number' ? draft.pageCount : 1,
+      getMaxPageFromFields(draftFields)
+    );
+
+    setPageCount(draftPageCount);
+    setCurrentPage(
+      typeof draft.currentPage === 'number'
+        ? Math.min(Math.max(1, draft.currentPage), draftPageCount)
+        : 1
+    );
     setZoom(typeof draft.zoom === 'number' ? clampZoom(draft.zoom) : 100);
     setShowGrid(Boolean(draft.showGrid));
     setAvailableLocalDraft(null);
@@ -410,6 +519,8 @@ const FormEditor = ({ formId, onGoHome }) => {
       setPageOrientation('portrait');
       setZoom(100);
       setShowGrid(false);
+      setPageCount(1);
+      setCurrentPage(1);
       setHasUserEdited(false);
 
       const localDraft = readLocalDraft(null);
@@ -441,6 +552,10 @@ const FormEditor = ({ formId, onGoHome }) => {
         const camposOrdenados = formData.fields || [];
         camposOrdenados.sort((a, b) => (a.order || 0) - (b.order || 0));
         setFields(camposOrdenados);
+
+        const detectedPageCount = getMaxPageFromFields(camposOrdenados);
+        setPageCount(detectedPageCount);
+        setCurrentPage(1);
 
         setPageFormat('A4');
         setPageOrientation('portrait');
@@ -502,6 +617,8 @@ const FormEditor = ({ formId, onGoHome }) => {
     formDescription,
     fields,
     pageFormat,
+    pageCount,
+    currentPage,
     pageOrientation,
     zoom,
     showGrid,
@@ -529,6 +646,8 @@ const FormEditor = ({ formId, onGoHome }) => {
     fields,
     pageFormat,
     pageOrientation,
+    pageCount,
+    currentPage,
     zoom,
     showGrid,
   ]);
@@ -756,8 +875,16 @@ const FormEditor = ({ formId, onGoHome }) => {
   // ======================================================
   // ADICIONAR NOVO CAMPO
   // ======================================================
-  const addField = (type) => {
+  const addField = (type, targetPage = currentPage) => {
+    const normalizedTargetPage = Math.max(1, Math.min(targetPage, pageCount));
+
+    const fieldsOnCurrentPage = fields.filter(
+      (field) => getFieldPage(field) === normalizedTargetPage
+    );
+
     const newIndex = fields.length;
+    const pageIndex = fieldsOnCurrentPage.length;
+
     const newField = {
       id: crypto.randomUUID(),
       type,
@@ -768,6 +895,7 @@ const FormEditor = ({ formId, onGoHome }) => {
         ? ['Opção 1']
         : [],
       order: newIndex + 1,
+      page: normalizedTargetPage,
 
       ...(type === FIELD_TYPES.LABEL
         ? {
@@ -777,16 +905,18 @@ const FormEditor = ({ formId, onGoHome }) => {
           }
         : {}),
 
-      // Coordenadas absolutas por omissão (#128)
       x: 40,
-      y: newIndex * 110 + 40,
+      y: pageIndex * 110 + 40,
       width: 320,
     };
 
     markUserEdited();
+    setCurrentPage(normalizedTargetPage);
     setFields((prevFields) => [...prevFields, newField]);
     setSelectedFieldId(newField.id);
-    showToast('Campo adicionado ao formulário.', 'success');
+    setEditingId(null);
+    setEditData({});
+    showToast(`Campo adicionado à página ${normalizedTargetPage}.`, 'success');
   };
 
   const handleCanvasDragOver = (event) => {
@@ -816,7 +946,10 @@ const FormEditor = ({ formId, onGoHome }) => {
       return;
     }
 
-    addField(droppedFieldType);
+    const pageElement = event.target.closest('[data-page-number]');
+    const droppedPage = Number(pageElement?.dataset?.pageNumber) || currentPage;
+
+    addField(droppedFieldType, droppedPage);
   };
 
   // ======================================================
@@ -924,6 +1057,8 @@ const FormEditor = ({ formId, onGoHome }) => {
     setPageOrientation('portrait');
     setZoom(100);
     setShowGrid(false);
+    setPageCount(1);
+    setCurrentPage(1);
     setIsPageFormatMenuOpen(false);
     setIsOrientationMenuOpen(false);
     setIsClearFormConfirmOpen(false);
@@ -993,6 +1128,23 @@ const FormEditor = ({ formId, onGoHome }) => {
   : {
       backgroundColor: '#ffffff',
     };
+
+    const safePageCount = Math.max(pageCount, getMaxPageFromFields(fields), 1);
+
+    const pages = Array.from({ length: safePageCount }, (_, index) => index + 1);
+
+    const getFieldsByPage = (pageNumber) => {
+      return fields
+        .map((field, originalIndex) => ({
+          field,
+          originalIndex,
+        }))
+        .filter(({ field }) => getFieldPage(field) === pageNumber)
+        .sort((a, b) => (a.field.order || 0) - (b.field.order || 0));
+    };
+
+    const totalCanvasHeight =
+      safePageCount * pageHeight + (safePageCount - 1) * PAGE_GAP;
 
   if (isLoading) {
     return (
@@ -1311,6 +1463,81 @@ const FormEditor = ({ formId, onGoHome }) => {
                 </section>
 
                 <section className="bg-white border border-slate-200 rounded-2xl p-4">
+                  <div className="flex items-center justify-between gap-3 mb-4">
+                    <div>
+                      <h3 className="text-sm font-black text-slate-800 flex items-center gap-2">
+                        <FileText size={16} className="text-indigo-600" />
+                        <span>Páginas do formulário</span>
+                      </h3>
+
+                      <p className="text-xs text-slate-500 mt-1">
+                        Selecione a página onde pretende adicionar ou editar campos.
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleAddPage}
+                      className="h-9 w-9 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 inline-flex items-center justify-center transition"
+                      title="Adicionar página"
+                    >
+                      <Plus size={16} />
+                    </button>
+                  </div>
+
+                  <div className="space-y-2">
+                    {pages.map((pageNumber) => {
+                      const fieldsCount = fields.filter(
+                        (field) => getFieldPage(field) === pageNumber
+                      ).length;
+
+                      return (
+                        <button
+                          key={pageNumber}
+                          type="button"
+                          onClick={() => handleSelectPage(pageNumber)}
+                          className={`w-full flex items-center justify-between gap-3 rounded-xl border px-3 py-2.5 text-left transition ${
+                            currentPage === pageNumber
+                              ? 'bg-indigo-50 border-indigo-200 text-indigo-800'
+                              : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                          }`}
+                        >
+                          <span>
+                            <span className="block text-sm font-black">
+                              Página {pageNumber}
+                            </span>
+
+                            <span className="block text-xs text-slate-500 mt-0.5">
+                              {fieldsCount} componente{fieldsCount === 1 ? '' : 's'}
+                            </span>
+                          </span>
+
+                          {currentPage === pageNumber && (
+                            <span className="text-[10px] font-black uppercase tracking-wide bg-indigo-600 text-white rounded-full px-2 py-1">
+                              Atual
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleRemoveCurrentPage}
+                    disabled={
+                      pageCount <= 1 ||
+                      fields.some((field) => getFieldPage(field) === currentPage)
+                    }
+                    className="mt-3 w-full inline-flex items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-sm font-bold text-red-700 hover:bg-red-100 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-red-50 transition"
+                    title="Só é possível remover páginas vazias"
+                  >
+                    <Trash2 size={15} />
+                    <span>Remover página atual</span>
+                  </button>
+                </section>
+
+                <section className="bg-white border border-slate-200 rounded-2xl p-4">
                   <h3 className="text-sm font-black text-slate-800 mb-4 flex items-center gap-2">
                     <Settings2 size={16} className="text-indigo-600" />
                     <span>Página</span>
@@ -1432,80 +1659,116 @@ const FormEditor = ({ formId, onGoHome }) => {
                 className="relative mx-auto my-10 origin-top-left transition-transform"
                 style={{
                   width: `${pageWidth * effectiveZoomScale}px`,
-                  height: `${pageHeight * effectiveZoomScale}px`,
+                  minHeight: `${totalCanvasHeight * effectiveZoomScale}px`,
                 }}
               >
                 <div
-                  className="border border-slate-300 shadow-2xl rounded-sm overflow-hidden"
                   style={{
                     width: `${pageWidth}px`,
-                    minHeight: `${pageHeight}px`,
                     transform: `scale(${effectiveZoomScale})`,
                     transformOrigin: 'top left',
-                    ...pageGridStyle,
                   }}
                 >
-                  {/* ================================================
-                      CANVAS ABSOLUTO — #128 Posicionamento absoluto
-                      ================================================ */}
-                  <div
-                    className="relative"
-                    style={{ minHeight: `${pageHeight}px` }}
-                    onPointerDown={() => {
-                      setSelectedFieldId(null);
-                      setEditingId(null);
-                      setEditData({});
-                      setIsPageFormatMenuOpen(false);
-                      setIsOrientationMenuOpen(false);
-                    }}
-                  >
-                    {fields.length === 0 && (
-                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                        <div className="text-center max-w-md bg-white/90 border border-slate-200 rounded-3xl px-10 py-12 shadow-sm">
-                          <div className="mx-auto mb-5 h-16 w-16 rounded-3xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
-                            <FileText size={32} />
+                  {pages.map((pageNumber) => {
+                    const pageFields = getFieldsByPage(pageNumber);
+                    const isCurrentVisualPage = currentPage === pageNumber;
+
+                    return (
+                      <div
+                        key={pageNumber}
+                        className="relative"
+                        style={{
+                          width: `${pageWidth}px`,
+                          minHeight: `${pageHeight}px`,
+                          marginBottom: pageNumber === safePageCount ? 0 : `${PAGE_GAP}px`,
+                        }}
+                      >
+                        <div className="flex items-center justify-between mb-3">
+                          <div>
+                            <p className="text-xs font-black uppercase tracking-wide text-slate-500">
+                              Página {pageNumber}
+                            </p>
+
+                            <p className="text-[11px] text-slate-400">
+                              {pageFields.length} componente{pageFields.length === 1 ? '' : 's'}
+                            </p>
                           </div>
 
-                          <h2 className="text-xl font-black text-slate-800 mb-2">
-                            O formulário ainda está vazio
-                          </h2>
+                          {isCurrentVisualPage && (
+                            <span className="inline-flex items-center rounded-full bg-indigo-600 text-white px-3 py-1 text-[11px] font-black">
+                              Página atual
+                            </span>
+                          )}
+                        </div>
 
-                          <p className="text-sm text-slate-500 leading-relaxed">
-                            Clique num componente ou arraste-o da sidebar para
-                            começar a construir a página.
-                          </p>
+                        <div
+                          data-page-number={pageNumber}
+                          className={`relative border shadow-2xl rounded-sm overflow-hidden transition ${
+                            isCurrentVisualPage
+                              ? 'border-indigo-400 ring-4 ring-indigo-100'
+                              : 'border-slate-300'
+                          }`}
+                          style={{
+                            width: `${pageWidth}px`,
+                            minHeight: `${pageHeight}px`,
+                            ...pageGridStyle,
+                          }}
+                          onPointerDown={() => {
+                            handleSelectPage(pageNumber);
+                            setIsPageFormatMenuOpen(false);
+                            setIsOrientationMenuOpen(false);
+                          }}
+                        >
+                          {pageFields.length === 0 && (
+                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                              <div className="text-center max-w-md bg-white/90 border border-slate-200 rounded-3xl px-10 py-12 shadow-sm">
+                                <div className="mx-auto mb-5 h-16 w-16 rounded-3xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                                  <FileText size={32} />
+                                </div>
+
+                                <h2 className="text-xl font-black text-slate-800 mb-2">
+                                  Página vazia
+                                </h2>
+
+                                <p className="text-sm text-slate-500 leading-relaxed">
+                                  Selecione esta página e clique ou arraste componentes
+                                  da sidebar para começar.
+                                </p>
+                              </div>
+                            </div>
+                          )}
+
+                          {pageFields.map(({ field, originalIndex }) => (
+                            <FieldCard
+                              key={field.id}
+                              field={field}
+                              index={originalIndex}
+                              totalFields={fields.length}
+                              moverCampo={moverCampo}
+                              reordenarCamposArrastados={reordenarCamposArrastados}
+                              editingId={editingId}
+                              editData={editData}
+                              setEditData={setEditData}
+                              saveField={saveField}
+                              cancelEditing={cancelEditing}
+                              startEditing={startEditing}
+                              deleteField={deleteField}
+                              FIELD_TYPES={FIELD_TYPES}
+                              updateOption={updateOption}
+                              removeOption={removeOption}
+                              addOption={addOption}
+                              renderField={renderField}
+                              isSelected={selectedFieldId === field.id}
+                              onSelect={setSelectedFieldId}
+                              zoomScale={effectiveZoomScale}
+                              onPositionChange={handleFieldPositionChange}
+                              onSizeChange={handleFieldSizeChange}
+                            />
+                          ))}
                         </div>
                       </div>
-                    )}
-
-                    {fields.map((field, index) => (
-                      <FieldCard
-                        key={field.id}
-                        field={field}
-                        index={index}
-                        totalFields={fields.length}
-                        moverCampo={moverCampo}
-                        reordenarCamposArrastados={reordenarCamposArrastados}
-                        editingId={editingId}
-                        editData={editData}
-                        setEditData={setEditData}
-                        saveField={saveField}
-                        cancelEditing={cancelEditing}
-                        startEditing={startEditing}
-                        deleteField={deleteField}
-                        FIELD_TYPES={FIELD_TYPES}
-                        updateOption={updateOption}
-                        removeOption={removeOption}
-                        addOption={addOption}
-                        renderField={renderField}
-                        isSelected={selectedFieldId === field.id}
-                        onSelect={setSelectedFieldId}
-                        zoomScale={effectiveZoomScale}
-                        onPositionChange={handleFieldPositionChange}
-                        onSizeChange={handleFieldSizeChange}
-                      />
-                    ))}
-                  </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -1660,6 +1923,7 @@ const FormEditor = ({ formId, onGoHome }) => {
           formDescription={formDescription}
           pageFormat={pageFormat}
           pageOrientation={pageOrientation}
+          pageCount={safePageCount}
         />
       </div>
     </div>
