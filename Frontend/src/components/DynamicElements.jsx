@@ -27,19 +27,53 @@ const FieldWrapper = ({ label, required, children, error }) => (
   </div>
 );
 
-export const FormLabel = ({ value, description }) => (
-  <div className="p-5 border border-blue-100 border-l-4 border-l-blue-500 bg-gradient-to-r from-blue-50 to-white rounded-2xl">
-    <h3 className="text-xl font-black text-blue-950">
-      {value || 'Título da Secção'}
-    </h3>
+export const FormLabel = ({
+  value,
+  description,
+  fontSize = 20,
+  fontWeight = 'bold',
+  textAlign = 'left',
+}) => {
+  const parsedFontSize = Number(fontSize);
 
-    {description && (
-      <p className="text-sm text-blue-700 mt-1 leading-relaxed">
-        {description}
-      </p>
-    )}
-  </div>
-);
+  const safeFontSize = Number.isFinite(parsedFontSize)
+    ? Math.min(48, Math.max(12, parsedFontSize))
+    : 20;
+
+  const safeFontWeight = ['normal', '500', '600', 'bold'].includes(fontWeight)
+    ? fontWeight
+    : 'bold';
+
+  const safeTextAlign = ['left', 'center', 'right', 'justify'].includes(textAlign)
+    ? textAlign
+    : 'left';
+
+  return (
+    <div className="p-5 border border-blue-100 border-l-4 border-l-blue-500 bg-gradient-to-r from-blue-50 to-white rounded-2xl">
+      <h3
+        className="text-blue-950 leading-snug"
+        style={{
+          fontSize: `${safeFontSize}px`,
+          fontWeight: safeFontWeight,
+          textAlign: safeTextAlign,
+        }}
+      >
+        {value || 'Título da Secção'}
+      </h3>
+
+      {description && (
+        <p
+          className="text-sm text-blue-700 mt-2 leading-relaxed"
+          style={{
+            textAlign: safeTextAlign,
+          }}
+        >
+          {description}
+        </p>
+      )}
+    </div>
+  );
+};
 
 export const FormRadioGroup = ({
   label,

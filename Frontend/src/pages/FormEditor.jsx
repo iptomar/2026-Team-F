@@ -57,7 +57,8 @@ const FIELD_TYPES = {
 // ======================================================
 // CONSTANTES DE GRELHA — SNAP TO GRID (#119)
 // ======================================================
-const GRID_SIZE = 20;
+const GRID_SIZE = 10;
+const MAJOR_GRID_SIZE = GRID_SIZE * 5;
 const MIN_FIELD_WIDTH = 100;
 const MIN_FIELD_HEIGHT = 60;
 
@@ -712,7 +713,15 @@ const FormEditor = ({ formId, onGoHome }) => {
   const renderField = (field) => {
     switch (field.type) {
       case FIELD_TYPES.LABEL:
-        return <FormLabel value={field.label} />;
+        return (
+          <FormLabel
+            value={field.label}
+            description={field.description}
+            fontSize={field.fontSize}
+            fontWeight={field.fontWeight}
+            textAlign={field.textAlign}
+          />
+        );
       case FIELD_TYPES.RADIO:
         return (
           <FormRadioGroup
@@ -753,11 +762,21 @@ const FormEditor = ({ formId, onGoHome }) => {
       id: crypto.randomUUID(),
       type,
       label: `Novo campo de ${type}`,
+      description: '',
       required: false,
       options: (type === FIELD_TYPES.RADIO || type === FIELD_TYPES.DROPDOWN)
         ? ['Opção 1']
         : [],
       order: newIndex + 1,
+
+      ...(type === FIELD_TYPES.LABEL
+        ? {
+            fontSize: 20,
+            fontWeight: 'bold',
+            textAlign: 'left',
+          }
+        : {}),
+
       // Coordenadas absolutas por omissão (#128)
       x: 40,
       y: newIndex * 110 + 40,
@@ -964,16 +983,16 @@ const FormEditor = ({ formId, onGoHome }) => {
   const effectiveZoomScale = Math.max(zoom, 1) / 100;
 
   const pageGridStyle = showGrid
-    ? {
-        backgroundColor: '#ffffff',
-        backgroundImage:
-          'linear-gradient(to right, rgba(99, 102, 241, 0.14) 1px, transparent 1px), linear-gradient(to bottom, rgba(99, 102, 241, 0.14) 1px, transparent 1px)',
-        backgroundSize: '24px 24px',
-        backgroundPosition: '0 0',
-      }
-    : {
-        backgroundColor: '#ffffff',
-      };
+  ? {
+      backgroundColor: '#ffffff',
+      backgroundImage:
+        'radial-gradient(circle, rgba(148, 163, 184, 0.42) 0.8px, transparent 0.8px), radial-gradient(circle, rgba(71, 85, 105, 0.55) 1.4px, transparent 1.4px)',
+      backgroundSize: `${GRID_SIZE}px ${GRID_SIZE}px, ${MAJOR_GRID_SIZE}px ${MAJOR_GRID_SIZE}px`,
+      backgroundPosition: '0 0, 0 0',
+    }
+  : {
+      backgroundColor: '#ffffff',
+    };
 
   if (isLoading) {
     return (
@@ -1432,7 +1451,13 @@ const FormEditor = ({ formId, onGoHome }) => {
                   <div
                     className="relative"
                     style={{ minHeight: `${pageHeight}px` }}
-                    onPointerDown={() => setSelectedFieldId(null)}
+                    onPointerDown={() => {
+                      setSelectedFieldId(null);
+                      setEditingId(null);
+                      setEditData({});
+                      setIsPageFormatMenuOpen(false);
+                      setIsOrientationMenuOpen(false);
+                    }}
                   >
                     {fields.length === 0 && (
                       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">

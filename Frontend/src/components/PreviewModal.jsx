@@ -23,6 +23,9 @@ import {
   FormTextInput,
 } from './DynamicElements';
 
+const GRID_SIZE = 10;
+const MAJOR_GRID_SIZE = GRID_SIZE * 5;
+
 const PAGE_SIZES = {
   A4: {
     width: 794,
@@ -118,6 +121,9 @@ const PreviewModal = ({
           <FormLabel
             value={field.label}
             description={field.description}
+            fontSize={field.fontSize}
+            fontWeight={field.fontWeight}
+            textAlign={field.textAlign}
           />
         );
 
@@ -187,16 +193,15 @@ const PreviewModal = ({
 
   const pageGridStyle = showGrid
     ? {
-      backgroundColor: '#ffffff',
-      backgroundImage:
-        'linear-gradient(to right, rgba(99, 102, 241, 0.14) 1px, transparent 1px), linear-gradient(to bottom, rgba(99, 102, 241, 0.14) 1px, transparent 1px)',
-      backgroundSize: '24px 24px',
-      backgroundPosition: '0 0',
-    }
+        backgroundColor: '#ffffff',
+        backgroundImage:
+          'radial-gradient(circle, rgba(148, 163, 184, 0.42) 0.8px, transparent 0.8px), radial-gradient(circle, rgba(71, 85, 105, 0.55) 1.4px, transparent 1.4px)',
+        backgroundSize: `${GRID_SIZE}px ${GRID_SIZE}px, ${MAJOR_GRID_SIZE}px ${MAJOR_GRID_SIZE}px`,
+        backgroundPosition: '0 0, 0 0',
+      }
     : {
-      backgroundColor: '#ffffff',
-    };
-
+        backgroundColor: '#ffffff',
+      };
   const zoomControl = (
     <div className="relative inline-flex items-center gap-3 rounded-2xl bg-white border border-slate-200 shadow-xl px-4 py-3 text-xs font-black text-slate-700">
       <button
