@@ -85,6 +85,10 @@ const SubmissionDetailPage = ({ submissionId, onBack }) => {
   const [error, setError] = useState(null);
   const [history, setHistory] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(true);
+  const [newStatus, setNewStatus] = useState('');
+  const [statusMessage, setStatusMessage] = useState('');
+  const [statusError, setStatusError] = useState('');
+  const [updatingStatus, setUpdatingStatus] = useState(false);
 
   // ======================================================
   // FETCH DE DADOS (submissão → template associado)
@@ -162,6 +166,64 @@ const SubmissionDetailPage = ({ submissionId, onBack }) => {
   // Suporta: campos simples, secções com sub-campos,
   // e ignora campos puramente estruturais
   // ======================================================
+  const handleUpdateStatus = async () => {
+    if (!newStatus) {
+      setStatusError('Selecione um novo estado.');
+      return;
+    }
+
+    if (newStatus === submission.status) {
+      setStatusError('O novo estado tem de ser diferente do estado atual.');
+      return;
+    }
+
+    try {
+      setUpdatingStatus(true);
+      setStatusError('');
+      setStatusMessage('');
+
+      const res = await fetch(
+        `http://localhost:3000/form-submissions/${submissionId}/status`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            status: newStatus,
+          }),
+        }
+      );
+
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        throw new Error(data?.error || data?.message || 'Erro ao atualizar estado.');
+      }
+
+      setSubmission((prev) => ({
+        ...prev,
+        status: data?.status || newStatus,
+      }));
+
+      setStatusMessage('Estado atualizado com sucesso.');
+      setNewStatus('');
+
+      const historyRes = await fetch(
+        `http://localhost:3000/form-submissions/${submissionId}/history`
+      );
+
+      if (historyRes.ok) {
+        const historyData = await historyRes.json();
+        setHistory(historyData);
+      }
+    } catch (err) {
+      setStatusError(err.message);
+    } finally {
+      setUpdatingStatus(false);
+    }
+  };
+  
   const extractAnswerableFields = (fields) => {
     if (!fields || !Array.isArray(fields)) return [];
 
@@ -404,6 +466,59 @@ const SubmissionDetailPage = ({ submissionId, onBack }) => {
                 </p>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Alteração de Estado */}
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden mb-8">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <h3 className="text-lg font-bold text-gray-800">
+              Alterar Estado da Submissão
+            </h3>
+            <p className="text-sm text-gray-500 mt-0.5">
+              Estado atual: <strong>{statusCfg.label}</strong>
+            </p>
+          </div>
+
+          <div className="px-6 py-5 flex flex-col sm:flex-row gap-3 sm:items-center">
+            <select
+              value={newStatus}
+              onChange={(e) => {
+                setNewStatus(e.target.value);
+                setStatusError('');
+                setStatusMessage('');
+              }}
+              className="w-full sm:w-64 px-4 py-2.5 border border-gray-300 rounded-xl bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+            >
+              <option value="">Selecionar novo estado</option>
+              <option value="pending">Pendente</option>
+              <option value="submitted">Submetida</option>
+              <option value="in_progress">Em Progresso</option>
+              <option value="approved">Aprovada</option>
+              <option value="rejected">Rejeitada</option>
+              <option value="completed">Concluída</option>
+            </select>
+
+            <button
+              type="button"
+              onClick={handleUpdateStatus}
+              disabled={updatingStatus}
+              className="px-5 py-2.5 rounded-xl bg-indigo-600 text-white font-semibold hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
+            >
+              {updatingStatus ? 'A atualizar...' : 'Atualizar Estado'}
+            </button>
+
+            {statusMessage && (
+              <span className="text-sm font-medium text-green-600">
+                {statusMessage}
+              </span>
+            )}
+
+            {statusError && (
+              <span className="text-sm font-medium text-red-600">
+                {statusError}
+              </span>
+            )}
           </div>
         </div>
 
