@@ -67,6 +67,9 @@ const SubmissionsPage = ({ onViewDetails }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedTemplate, setSelectedTemplate] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState('');
+  const [selectedDate, setSelectedDate] = useState('');
 
   // ======================================================
   // FETCH DE DADOS
@@ -121,10 +124,41 @@ const SubmissionsPage = ({ onViewDetails }) => {
   // ======================================================
   const filteredSubmissions = submissions.filter((sub) => {
     const templateName = getTemplateName(sub.form_template_id).toLowerCase();
-    const status = (getStatusConfig(sub.status).label || '').toLowerCase();
+    const statusLabel = (getStatusConfig(sub.status).label || '').toLowerCase();
     const term = searchTerm.toLowerCase();
-    return templateName.includes(term) || status.includes(term);
+
+    const matchesSearch =
+      !term ||
+      templateName.includes(term) ||
+      statusLabel.includes(term) ||
+      String(sub.id || '').toLowerCase().includes(term);
+
+    const matchesTemplate =
+      !selectedTemplate || sub.form_template_id === selectedTemplate;
+
+    const matchesStatus =
+      !selectedStatus || sub.status === selectedStatus;
+
+    const submissionDate = sub.submitted_at || sub.created_at;
+    const formattedDate = submissionDate
+      ? new Date(submissionDate).toISOString().slice(0, 10)
+      : '';
+
+    const matchesDate =
+      !selectedDate || formattedDate === selectedDate;
+
+    return matchesSearch && matchesTemplate && matchesStatus && matchesDate;
   });
+
+  // ======================================================
+  // Limpar filtros
+  // ======================================================
+  const clearFilters = () => {
+    setSearchTerm('');
+    setSelectedTemplate('');
+    setSelectedStatus('');
+    setSelectedDate('');
+  };
 
   // ======================================================
   // RENDERIZAÇÃO
@@ -159,30 +193,74 @@ const SubmissionsPage = ({ onViewDetails }) => {
             </p>
           </div>
 
-          <div className="relative w-full sm:w-80">
-            <svg
-              className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3 w-full">
+            <div className="relative">
+              <svg
+                className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
+              </svg>
+              <input
+                type="text"
+                placeholder="Pesquisar..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
               />
-            </svg>
-            <input
-              type="text"
-              placeholder="Pesquisar por formulário ou estado..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
-            />
+            </div>
+
+            <select
+              value={selectedTemplate}
+              onChange={(e) => setSelectedTemplate(e.target.value)}
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-xl bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+            >
+              <option value="">Todos os formulários</option>
+              {templates.map((template) => (
+                <option key={template.id} value={template.id}>
+                  {template.name}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={selectedStatus}
+              onChange={(e) => setSelectedStatus(e.target.value)}
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-xl bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+            >
+              <option value="">Todos os estados</option>
+              <option value="pending">Pendente</option>
+              <option value="submitted">Submetida</option>
+              <option value="approved">Aprovada</option>
+              <option value="rejected">Rejeitada</option>
+            </select>
+
+            <div className="flex gap-2">
+              <input
+                type="date"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-xl bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+              />
+
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="px-4 py-2.5 rounded-xl bg-gray-100 text-gray-700 border border-gray-300 hover:bg-gray-200 font-semibold transition"
+              >
+                Limpar
+              </button>
+            </div>
           </div>
         </div>
-
+cd Frontend
         {/* Estado de carregamento */}
         {loading && (
           <div className="text-center py-16">
