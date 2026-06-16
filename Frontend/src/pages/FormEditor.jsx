@@ -253,6 +253,9 @@ const FormEditor = ({ formId, onGoHome }) => {
   const [editingId, setEditingId] = useState(null);
   const [editData, setEditData] = useState({});
 
+  const [workflows, setWorkflows] = useState([]);
+  const [selectedWorkflowId, setSelectedWorkflowId] = useState('');
+
   // ======================================================
   // SELEÇÃO NO CANVAS ABSOLUTO (#128)
   // ======================================================
@@ -477,6 +480,21 @@ const FormEditor = ({ formId, onGoHome }) => {
   // CTRL + SCROLL APENAS NO PAINEL DA PÁGINA
   // ======================================================
   useEffect(() => {
+    const loadWorkflows = async () => {
+      try {
+        const response = await fetch('http://localhost:3000/workflows');
+        const data = await response.json();
+
+        setWorkflows(data || []);
+      } catch (error) {
+        console.error('Erro ao carregar workflows:', error);
+      }
+    };
+
+    loadWorkflows();
+  }, []);
+
+  useEffect(() => {
     const canvasViewport = canvasViewportRef.current;
 
     if (!canvasViewport) {
@@ -548,6 +566,7 @@ const FormEditor = ({ formId, onGoHome }) => {
         setCurrentFormId(formData.id);
         setFormName(formData.name);
         setFormDescription(formData.description || '');
+        setSelectedWorkflowId(formData.workflow_id || '');
 
         const camposOrdenados = formData.fields || [];
         camposOrdenados.sort((a, b) => (a.order || 0) - (b.order || 0));
@@ -964,6 +983,7 @@ const FormEditor = ({ formId, onGoHome }) => {
         description: formDescription,
         fields: normalizedFields,
         status,
+        workflow_id: selectedWorkflowId || null,
       };
 
       let method = 'POST';
@@ -1461,6 +1481,33 @@ const FormEditor = ({ formId, onGoHome }) => {
                     </div>
                   </div>
                 </section>
+
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">
+                    Workflow associado
+                  </label>
+
+                  <select
+                    value={selectedWorkflowId}
+                    onChange={(event) => {
+                      markUserEdited();
+                      setSelectedWorkflowId(event.target.value);
+                    }}
+                    className="px-4 py-3 w-full border border-slate-200 rounded-xl text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+                  >
+                    <option value="">Sem workflow associado</option>
+
+                    {workflows.map((workflow) => (
+                      <option key={workflow.id} value={workflow.id}>
+                        {workflow.name || `Workflow ${workflow.id.slice(0, 8)}`}
+                      </option>
+                    ))}
+                  </select>
+
+                  <p className="text-xs text-slate-500 mt-2">
+                    Pode associar ou remover um workflow deste formulário.
+                  </p>
+                </div>
 
                 <section className="bg-white border border-slate-200 rounded-2xl p-4">
                   <div className="flex items-center justify-between gap-3 mb-4">
