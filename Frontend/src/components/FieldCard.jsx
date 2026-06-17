@@ -564,6 +564,52 @@ const FieldCard = ({
                 </div>
 
                 {field.type === FIELD_TYPES.LABEL && (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-black uppercase tracking-wide text-slate-500 mb-1.5">
+                        Tamanho
+                      </label>
+
+                      <select
+                        value={editData.fontSize || 20}
+                        onChange={(event) =>
+                          setEditData({
+                            ...editData,
+                            fontSize: Number(event.target.value),
+                          })
+                        }
+                        className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm"
+                      >
+                        <option value={16}>Pequeno</option>
+                        <option value={20}>Normal</option>
+                        <option value={28}>Grande</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-black uppercase tracking-wide text-slate-500 mb-1.5">
+                        Alinhamento
+                      </label>
+
+                      <select
+                        value={editData.textAlign || 'left'}
+                        onChange={(event) =>
+                          setEditData({
+                            ...editData,
+                            textAlign: event.target.value,
+                          })
+                        }
+                        className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm"
+                      >
+                        <option value="left">Esquerda</option>
+                        <option value="center">Centro</option>
+                        <option value="right">Direita</option>
+                      </select>
+                    </div>
+                  </div>
+                )}
+
+                {field.type === FIELD_TYPES.LABEL && (
                   <div>
                     <label className="block text-xs font-black uppercase tracking-wide text-slate-500 mb-1.5">
                       Descrição auxiliar
@@ -694,6 +740,7 @@ const FieldCard = ({
                 "Opções",
                 "Adicionar, editar ou remover",
                 <>
+                {(field.type === FIELD_TYPES.RADIO || field.type === FIELD_TYPES.DROPDOWN) && (
                   <div className="space-y-2">
                     {(editData.options || []).map((option, optionIndex) => (
                       <div key={optionIndex} className="flex gap-2">
@@ -718,7 +765,9 @@ const FieldCard = ({
                       </div>
                     ))}
                   </div>
-
+                )}
+                {(field.type === FIELD_TYPES.RADIO ||
+                  field.type === FIELD_TYPES.DROPDOWN) && (
                   <button
                     type="button"
                     onClick={addOption}
@@ -727,10 +776,11 @@ const FieldCard = ({
                     <CirclePlus size={15} />
                     <span>Adicionar opção</span>
                   </button>
+                )}
                 </>
               )}
           </div>
-
+        
           <div className="sticky bottom-0 bg-white border-t border-slate-100 p-3 rounded-b-2xl flex gap-2">
             <button
               type="button"
