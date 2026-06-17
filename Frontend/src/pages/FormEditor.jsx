@@ -891,10 +891,10 @@ const FormEditor = ({ formId, onGoHome }) => {
     }
   };
 
-  // ======================================================
+ // ======================================================
   // ADICIONAR NOVO CAMPO
   // ======================================================
-  const addField = (type, targetPage = currentPage) => {
+  const addField = (type, targetPage = currentPage, dropX = null, dropY = null) => {
     const normalizedTargetPage = Math.max(1, Math.min(targetPage, pageCount));
 
     const fieldsOnCurrentPage = fields.filter(
@@ -924,8 +924,9 @@ const FormEditor = ({ formId, onGoHome }) => {
           }
         : {}),
 
-      x: 40,
-      y: pageIndex * 110 + 40,
+      // Se houver coordenadas de drop, usamos. Senão, vai para a posição padrão.
+      x: dropX !== null ? dropX : 40,
+      y: dropY !== null ? dropY : pageIndex * 110 + 40,
       width: 320,
     };
 
@@ -968,9 +969,22 @@ const FormEditor = ({ formId, onGoHome }) => {
     const pageElement = event.target.closest('[data-page-number]');
     const droppedPage = Number(pageElement?.dataset?.pageNumber) || currentPage;
 
-    addField(droppedFieldType, droppedPage);
-  };
+    let dropX = null;
+    let dropY = null;
 
+    // Calcula o pixel exato do rato na folha A4 e ajusta à grelha
+    if (pageElement) {
+      const rect = pageElement.getBoundingClientRect();
+      const rawX = (event.clientX - rect.left) / effectiveZoomScale;
+      const rawY = (event.clientY - rect.top) / effectiveZoomScale;
+
+      dropX = Math.round(rawX / GRID_SIZE) * GRID_SIZE;
+      dropY = Math.round(rawY / GRID_SIZE) * GRID_SIZE;
+    }
+
+    // Passa as coordenadas calculadas para a função que cria o campo
+    addField(droppedFieldType, droppedPage, dropX, dropY);
+  };
   // ======================================================
   // SALVAR FORMULÁRIO NO BANCO DE DADOS
   // ======================================================
