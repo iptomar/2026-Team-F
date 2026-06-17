@@ -28,10 +28,15 @@ import Sidebar from "../components/Sidebar";
 // TIPOS DE CAMPOS DISPONÍVEIS
 // ======================================================
 const FIELD_TYPES = {
-  LABEL: 'label',
-  RADIO: 'radio',
+  LABEL:    'label',
+  RADIO:    'radio',
   CHECKBOX: 'checkbox',
   DROPDOWN: 'dropdown',
+  TEXT:     'text',
+  TEXTAREA: 'textarea',
+  NUMBER:   'number',
+  EMAIL:    'email',
+  DATE:     'date',
 };
 
 // ======================================================
@@ -242,6 +247,52 @@ const FormEditor = ({ formId, onGoHome }) => {
         return <FormCheckbox label={field.label} description={field.label} required={field.required} />;
       case FIELD_TYPES.DROPDOWN:
         return <FormDropdown label={field.label} options={field.options} required={field.required} />;
+      // Campos avançados (#69)
+      case FIELD_TYPES.TEXT:
+        return (
+          <div className="flex flex-col">
+            <label className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-2">
+              {field.label} {field.required && <span className="text-red-500">*</span>}
+            </label>
+            <input type="text" disabled placeholder="Campo de texto" className="w-full p-3 border border-gray-300 rounded-md bg-gray-50 text-gray-400" />
+          </div>
+        );
+      case FIELD_TYPES.TEXTAREA:
+        return (
+          <div className="flex flex-col">
+            <label className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-2">
+              {field.label} {field.required && <span className="text-red-500">*</span>}
+            </label>
+            <textarea disabled placeholder="Campo de texto longo" rows={3} className="w-full p-3 border border-gray-300 rounded-md bg-gray-50 text-gray-400 resize-none" />
+          </div>
+        );
+      case FIELD_TYPES.NUMBER:
+        return (
+          <div className="flex flex-col">
+            <label className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-2">
+              {field.label} {field.required && <span className="text-red-500">*</span>}
+            </label>
+            <input type="number" disabled placeholder="0" className="w-full p-3 border border-gray-300 rounded-md bg-gray-50 text-gray-400" />
+          </div>
+        );
+      case FIELD_TYPES.EMAIL:
+        return (
+          <div className="flex flex-col">
+            <label className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-2">
+              {field.label} {field.required && <span className="text-red-500">*</span>}
+            </label>
+            <input type="email" disabled placeholder="exemplo@email.com" className="w-full p-3 border border-gray-300 rounded-md bg-gray-50 text-gray-400" />
+          </div>
+        );
+      case FIELD_TYPES.DATE:
+        return (
+          <div className="flex flex-col">
+            <label className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-2">
+              {field.label} {field.required && <span className="text-red-500">*</span>}
+            </label>
+            <input type="date" disabled className="w-full p-3 border border-gray-300 rounded-md bg-gray-50 text-gray-400" />
+          </div>
+        );
       default:
         return null;
     }
@@ -251,12 +302,13 @@ const FormEditor = ({ formId, onGoHome }) => {
   // ADICIONAR NOVO CAMPO
   // ======================================================
   const addField = (type) => {
+    const comOpcoes = [FIELD_TYPES.RADIO, FIELD_TYPES.DROPDOWN];
     const newField = {
       id: crypto.randomUUID(),
       type: type,
       label: `Novo campo de ${type}`,
       required: false,
-      options: (type === FIELD_TYPES.RADIO || type === FIELD_TYPES.DROPDOWN) ? ['Opção 1'] : [],
+      options: comOpcoes.includes(type) ? ['Opção 1'] : [],
       order: fields.length + 1,
     };
     setFields(prevFields => [...prevFields, newField]);
