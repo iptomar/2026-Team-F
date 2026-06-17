@@ -298,7 +298,24 @@ const PreviewModal = ({
   );
 
   const previewPage = (
-    <div className="p-6 lg:p-8 min-h-full flex flex-col">
+    <div
+      className="relative mx-auto my-10 origin-top-left transition-transform"
+      style={{
+        width: `${pageWidth * effectiveZoomScale}px`,
+        height: `${pageHeight * effectiveZoomScale}px`,
+      }}
+    >
+      <div
+        className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden bg-white"
+        style={{
+          width: `${pageWidth}px`,
+          minHeight: `${pageHeight}px`,
+          transform: `scale(${effectiveZoomScale})`,
+          transformOrigin: 'top left',
+          ...pageGridStyle,
+        }}
+      >
+        <div className="p-6 lg:p-8 min-h-full flex flex-col relative">
           {schema.length === 0 ? (
             <div className="h-full min-h-[420px] text-center flex items-center justify-center flex-grow">
               <div>
@@ -315,19 +332,45 @@ const PreviewModal = ({
             </div>
           ) : (
             <>
-              <div className="space-y-6 flex-grow">
-                {currentFields.map((field) => (
-                  <div key={field.id}>
-                    {renderField(field)}
-                  </div>
-                ))}
+              {/* ZONA DOS CAMPOS - AGORA COM SUPORTE A ABSOLUTO E RELATIVO */}
+              <div className="flex-grow w-full relative" style={{ minHeight: '600px' }}>
+                {currentFields.map((field) => {
+                  // Verifica se é um campo do layout novo (com coordenadas)
+                  const isAbsolute = field.x !== undefined && field.y !== undefined;
+
+                  return (
+                    <div
+                      key={field.id}
+                      style={
+                        isAbsolute
+                          ? {
+                              position: 'absolute',
+                              left: `${field.x}px`,
+                              top: `${field.y}px`,
+                              width: field.width ? `${field.width}px` : 'auto',
+                              height: field.height ? `${field.height}px` : 'auto',
+                            }
+                          : {
+                              position: 'relative',
+                              marginBottom: '1.5rem',
+                              width: '100%',
+                            }
+                      }
+                    >
+                      {renderField(field)}
+                    </div>
+                  );
+                })}
+                
                 {currentFields.length === 0 && (
-                  <p className="text-center text-slate-400 italic py-10">Esta página está vazia.</p>
+                  <p className="text-center text-slate-400 italic py-10 w-full absolute top-0">
+                    Esta página está vazia.
+                  </p>
                 )}
               </div>
 
               {pageCount > 1 && (
-                <div className="mt-10 pt-6 border-t border-slate-200 flex items-center justify-between">
+                <div className="mt-10 pt-6 border-t border-slate-200 flex items-center justify-between relative z-50 bg-white">
                   <button
                     type="button"
                     onClick={handlePrevPage}
@@ -361,8 +404,9 @@ const PreviewModal = ({
             </>
           )}
         </div>
+      </div>
+    </div>
   );
-
   const normalModal = (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/70 backdrop-blur-sm p-4">
       <div className="bg-white shadow-2xl flex flex-col overflow-hidden border border-slate-200 w-full max-w-6xl max-h-[90vh] rounded-3xl">
