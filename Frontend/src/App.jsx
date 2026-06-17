@@ -10,6 +10,7 @@ import {
   NotebookPen,
   Sparkles,
   Undo2,
+  Workflow,
 } from 'lucide-react';
 import AuthPage from './pages/AuthPage';
 import HomePage from './pages/HomePage';
@@ -17,6 +18,7 @@ import FormEditor from './pages/FormEditor';
 import FormFillPage from './pages/FormFillPage';
 import SubmissionsPage from './pages/SubmissionsPage';
 import SubmissionDetailPage from './pages/SubmissionDetailPage';
+import WorkflowsPage from './pages/WorkflowsPage';
 import {
   clearAuthSession,
   getAuthenticatedUser,
@@ -120,6 +122,12 @@ function App() {
     setSelectedTemplateId(null);
   };
 
+  const handleViewWorkflows = () => {
+    setCurrentPage('workflows');
+    setSelectedSubmissionId(null);
+    setSelectedTemplateId(null);
+  };
+
   const handleViewSubmissionDetail = (submissionId) => {
     setSelectedSubmissionId(submissionId);
     setCurrentPage('submission_detail');
@@ -172,6 +180,8 @@ function App() {
   if (!authToken || !authUser) {
     return <AuthPage onAuthenticated={handleAuthenticated} />;
   }
+
+  const isWorkflowsActive = currentPage === 'workflows';
 
   const homeNavItems = [
     { id: 'editor', label: 'Criar', icon: Sparkles },
@@ -246,6 +256,19 @@ function App() {
 
               <button
                 type="button"
+                onClick={handleViewWorkflows}
+                className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all border ${
+                  isWorkflowsActive
+                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
+                    : 'bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100 hover:border-indigo-300'
+                }`}
+              >
+                <Workflow size={17} />
+                <span>Workflows</span>
+              </button>
+
+              <button
+                type="button"
                 onClick={handleLogout}
                 className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 hover:border-red-300 transition-all"
               >
@@ -297,6 +320,10 @@ function App() {
 
       {currentPage === 'submissions' && (
         <SubmissionsPage onViewDetails={handleViewSubmissionDetail} />
+      )}
+
+      {currentPage === 'workflows' && (
+        <WorkflowsPage />
       )}
 
       {currentPage === 'submission_detail' && selectedSubmissionId && (
