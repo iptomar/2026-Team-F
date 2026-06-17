@@ -20,6 +20,13 @@ const FormFillPage = ({ templateId, onBack }) => {
   const [erro, setErro] = useState('');
   const [sucesso, setSucesso] = useState('');
 
+  // Lógica de páginas
+  const [currentPage, setCurrentPage] = useState(1);
+  const fields = template?.fields || [];
+  const sortedFields = [...fields].sort((a, b) => (a.order || 0) - (b.order || 0));
+  const pageCount = Math.max(1, ...sortedFields.map((f) => f.page || 1));
+  const currentFields = sortedFields.filter((f) => (f.page || 1) === currentPage);
+
   // ======================================================
   // CARREGAR O TEMPLATE
   // ======================================================
@@ -65,30 +72,42 @@ const FormFillPage = ({ templateId, onBack }) => {
   };
 
   // ======================================================
-  // VALIDAÇÃO DE CAMPOS OBRIGATÓRIOS
+  // VALIDAÇÃO E NAVEGAÇÃO DE PÁGINAS
   // ======================================================
-  const validarCamposObrigatorios = () => {
-    if (!template?.fields) return null;
-
-    const camposObrigatorios = template.fields.filter((f) => f.required);
-
+  const validarPaginaAtual = () => {
+    const camposObrigatorios = currentFields.filter((f) => f.required);
     for (const field of camposObrigatorios) {
       if (field.type === 'label') continue;
-
       const valor = formData[field.id];
-
       if (
-        valor === undefined ||
-        valor === null ||
-        valor === '' ||
-        valor === false ||
+        valor === undefined || valor === null || valor === '' || valor === false ||
         (Array.isArray(valor) && valor.length === 0)
       ) {
-        return `O campo "${field.label}" é obrigatório.`;
+        return `O campo "${field.label}" é obrigatório para avançar.`;
       }
     }
-
     return null;
+  };
+
+  const handleNextPage = () => {
+    setErro('');
+    const erroValidacao = validarPaginaAtual();
+    if (erroValidacao) {
+      setErro(erroValidacao);
+      return;
+    }
+    if (currentPage < pageCount) {
+      setCurrentPage((prev) => prev + 1);
+      window.scrollTo(0, 0);
+    }
+  };
+
+  const handlePrevPage = () => {
+    setErro('');
+    if (currentPage > 1) {
+      setCurrentPage((prev) => prev - 1);
+      window.scrollTo(0, 0);
+    }
   };
 
   // ======================================================
@@ -98,42 +117,32 @@ const FormFillPage = ({ templateId, onBack }) => {
     setErro('');
     setSucesso('');
 
-    const erroValidacao = validarCamposObrigatorios();
+    const erroValidacao = validarPaginaAtual();
     if (erroValidacao) {
       setErro(erroValidacao);
       return;
     }
 
-    const payload = {
-      form_template_id: templateId,
-      data: formData,
-    };
+    const payload = { form_template_id: templateId, data: formData };
 
     try {
       setIsSubmitting(true);
-
       const response = await fetch('http://localhost:3000/form-submissions', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
 
       const resultado = await response.json().catch(() => null);
 
       if (!response.ok) {
-        setErro(
-          resultado?.error ||
-            'Erro ao submeter o formulário. Confirme se o backend está ativo.'
-        );
+        setErro(resultado?.error || 'Erro ao submeter o formulário.');
         return;
       }
 
       alert('Formulário submetido com sucesso!');
       if (onBack) onBack();
     } catch (err) {
-      console.error('Erro na ligação ao servidor:', err);
       setErro('Não foi possível conectar ao servidor backend.');
     } finally {
       setIsSubmitting(false);
@@ -143,7 +152,7 @@ const FormFillPage = ({ templateId, onBack }) => {
   // ======================================================
   // RENDERIZAR CAMPO INTERATIVO
   // ======================================================
-  const renderField = (field) => {
+  function renderField(field) {
     const valorAtual = formData[field.id] ?? '';
 
     switch (field.type) {
@@ -158,8 +167,7 @@ const FormFillPage = ({ templateId, onBack }) => {
             required={field.required}
             isPreview={true}
             value={valorAtual}
-            onChange={(valor) => handleInputChange(field.id, valor)}
-          />
+            onChange={(valor) => handleInputChange(field.id, valor)} />
         );
 
       case 'checkbox':
@@ -170,8 +178,7 @@ const FormFillPage = ({ templateId, onBack }) => {
             required={field.required}
             isPreview={true}
             value={valorAtual}
-            onChange={(newArray) => handleInputChange(field.id, newArray)}
-          />
+            onChange={(newArray) => handleInputChange(field.id, newArray)} />
         );
 
       case 'dropdown':
@@ -182,10 +189,7 @@ const FormFillPage = ({ templateId, onBack }) => {
             required={field.required}
             isPreview={true}
             value={valorAtual}
-            onChange={(event) =>
-              handleInputChange(field.id, event.target.value)
-            }
-          />
+            onChange={(event) => handleInputChange(field.id, event.target.value)} />
         );
 
       case 'text':
@@ -195,14 +199,13 @@ const FormFillPage = ({ templateId, onBack }) => {
             required={field.required}
             isPreview={true}
             value={valorAtual}
-            onChange={(valor) => handleInputChange(field.id, valor)}
-          />
+            onChange={(valor) => handleInputChange(field.id, valor)} />
         );
 
       default:
         return null;
     }
-  };
+  }
 
   // ======================================================
   // ESTADOS DE CARREGAMENTO E ERRO
@@ -237,11 +240,6 @@ const FormFillPage = ({ templateId, onBack }) => {
   }
 
   if (!template) return null;
-
-  const fields = template.fields || [];
-  const sortedFields = [...fields].sort(
-    (a, b) => (a.order || 0) - (b.order || 0)
-  );
 
   // ======================================================
   // RENDER PRINCIPAL

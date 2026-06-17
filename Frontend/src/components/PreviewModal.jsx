@@ -56,6 +56,7 @@ const PreviewModal = ({
   formDescription = '',
   pageFormat = 'A4',
   pageOrientation = 'portrait',
+  pageCount = 1,
 }) => {
   const previewViewportRef = useRef(null);
 
@@ -63,12 +64,15 @@ const PreviewModal = ({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [previewZoom, setPreviewZoom] = useState(100);
   const [showGrid, setShowGrid] = useState(false);
+  
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
-    if (!isOpen) {
-      return undefined;
-    }
+    if (isOpen) setCurrentPage(1);
+  }, [isOpen]);
 
+  useEffect(() => {
+    if (!isOpen) return undefined;
     const previewViewport = previewViewportRef.current;
 
     if (!previewViewport) {
@@ -106,12 +110,40 @@ const PreviewModal = ({
       [fieldId]: value,
     }));
   };
-
+ 
   const handleClose = () => {
     setIsFullscreen(false);
     onClose();
   };
 
+  const currentFields = schema.filter((field) => (field.page || 1) === currentPage);
+
+  const validateCurrentPage = () => {
+    const requiredFields = currentFields.filter((f) => f.required);
+    for (const field of requiredFields) {
+      const value = previewData[field.id];
+      if (
+        value === undefined || 
+        value === null || 
+        (typeof value === 'string' && value.trim() === '') ||
+        (Array.isArray(value) && value.length === 0)
+      ) {
+        alert(`⚠️ Por favor, preencha o campo obrigatório: "${field.label}" antes de avançar.`);
+        return false;
+      }
+    }
+    return true;
+  };
+
+  const handleNextPage = () => {
+    if (validateCurrentPage() && currentPage < pageCount) {
+      setCurrentPage((prev) => prev + 1);
+    }
+  };
+
+  const handlePrevPage = () => {
+    if (currentPage > 1) setCurrentPage((prev) => prev - 1);
+  };
   const renderField = (field) => {
     const currentValue = previewData[field.id] ?? '';
 
@@ -266,52 +298,69 @@ const PreviewModal = ({
   );
 
   const previewPage = (
-    <div
-      className="relative mx-auto my-10 origin-top-left transition-transform"
-      style={{
-        width: `${pageWidth * effectiveZoomScale}px`,
-        height: `${pageHeight * effectiveZoomScale}px`,
-      }}
-    >
-      <div
-        className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden"
-        style={{
-          width: `${pageWidth}px`,
-          minHeight: `${pageHeight}px`,
-          transform: `scale(${effectiveZoomScale})`,
-          transformOrigin: 'top left',
-          ...pageGridStyle,
-        }}
-      >
-        <div className="p-6 lg:p-8 min-h-full">
+    <div className="p-6 lg:p-8 min-h-full flex flex-col">
           {schema.length === 0 ? (
-            <div className="h-full min-h-[420px] text-center flex items-center justify-center">
+            <div className="h-full min-h-[420px] text-center flex items-center justify-center flex-grow">
               <div>
                 <div className="mx-auto mb-5 h-16 w-16 rounded-3xl bg-slate-100 text-slate-400 flex items-center justify-center">
                   <Eye size={30} />
                 </div>
-
                 <h3 className="text-xl font-black text-slate-800 mb-2">
                   Nenhum campo para mostrar
                 </h3>
-
                 <p className="text-sm text-slate-500">
                   Adicione componentes no editor para visualizar o formulário.
                 </p>
               </div>
             </div>
           ) : (
-            <div className="space-y-6">
-              {schema.map((field) => (
-                <div key={field.id}>
-                  {renderField(field)}
+            <>
+              <div className="space-y-6 flex-grow">
+                {currentFields.map((field) => (
+                  <div key={field.id}>
+                    {renderField(field)}
+                  </div>
+                ))}
+                {currentFields.length === 0 && (
+                  <p className="text-center text-slate-400 italic py-10">Esta página está vazia.</p>
+                )}
+              </div>
+
+              {pageCount > 1 && (
+                <div className="mt-10 pt-6 border-t border-slate-200 flex items-center justify-between">
+                  <button
+                    type="button"
+                    onClick={handlePrevPage}
+                    disabled={currentPage === 1}
+                    className="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 font-bold disabled:opacity-40 disabled:hover:bg-transparent disabled:cursor-not-allowed transition"
+                  >
+                    Anterior
+                  </button>
+                  <span className="text-sm font-bold text-slate-400">
+                    Página {currentPage} de {pageCount}
+                  </span>
+                  {currentPage < pageCount ? (
+                    <button
+                      type="button"
+                      onClick={handleNextPage}
+                      className="px-5 py-2.5 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 font-bold shadow-sm transition"
+                    >
+                      Próximo
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => alert('Modo Preview: Submissão simulada com sucesso!')}
+                      className="px-5 py-2.5 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 font-bold shadow-sm transition"
+                    >
+                      Submeter
+                    </button>
+                  )}
                 </div>
-              ))}
-            </div>
+              )}
+            </>
           )}
         </div>
-      </div>
-    </div>
   );
 
   const normalModal = (
