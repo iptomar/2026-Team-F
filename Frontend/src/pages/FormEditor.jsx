@@ -30,10 +30,15 @@ import {
 // ======================================================
 import {
   FormLabel,
+  FormSectionHeader,
   FormRadioGroup,
   FormCheckbox,
   FormDropdown,
-  FormTextInput
+  FormTextInput,
+  FormTextArea,
+  FormEmailInput,
+  FormNumberInput,
+  FormDateInput,
 } from '../components/DynamicElements';
 
 // ======================================================
@@ -52,6 +57,11 @@ const FIELD_TYPES = {
   CHECKBOX: 'checkbox',
   DROPDOWN: 'dropdown',
   TEXT: 'text',
+  TEXTAREA: 'textarea',
+  EMAIL: 'email',
+  NUMBER: 'number',
+  DATE: 'date',
+  SECTION: 'section',
 };
 
 // ======================================================
@@ -193,7 +203,11 @@ const formatAutosaveDate = (isoDate) => {
 };
 
 const fieldTypeUsesOptions = (type) => {
-  return type === FIELD_TYPES.RADIO || type === FIELD_TYPES.DROPDOWN;
+  return (
+    type === FIELD_TYPES.RADIO ||
+    type === FIELD_TYPES.DROPDOWN ||
+    type === FIELD_TYPES.CHECKBOX
+  );
 };
 
 const normalizeFieldForDatabase = (field, index) => {
@@ -892,8 +906,62 @@ const FormEditor = ({ formId, onGoHome }) => {
             required={field.required}
           />
         );
-      case FIELD_TYPES.TEXT:
-        return <FormTextInput label={field.label} required={field.required} />;
+      case FIELD_TYPES.TEXTAREA:
+        return (
+          <FormTextArea
+            label={field.label}
+            required={field.required}
+            value=""
+            isPreview={true}
+          />
+        );
+      case FIELD_TYPES.EMAIL:
+        return (
+          <FormEmailInput
+            label={field.label}
+            required={field.required}
+            value=""
+            isPreview={true}
+          />
+        );
+      case FIELD_TYPES.NUMBER:
+        return (
+          <FormNumberInput
+            label={field.label}
+            required={field.required}
+            value=""
+            isPreview={true}
+          />
+        );
+      case FIELD_TYPES.DATE:
+        return (
+          <FormDateInput
+            label={field.label}
+            required={field.required}
+            value=""
+            isPreview={true}
+          />
+        );
+      case FIELD_TYPES.SECTION:
+        return (
+          <FormSectionHeader
+            value={field.label}
+            description={field.description}
+            fontSize={field.fontSize}
+            fontWeight={field.fontWeight}
+            textAlign={field.textAlign}
+          />
+        );
+      case FIELD_TYPES.LABEL:
+        return (
+          <FormLabel
+            value={field.label}
+            description={field.description}
+            fontSize={field.fontSize}
+            fontWeight={field.fontWeight}
+            textAlign={field.textAlign}
+          />
+        );
       default:
         return null;
     }
@@ -915,22 +983,48 @@ const FormEditor = ({ formId, onGoHome }) => {
     const newField = {
       id: crypto.randomUUID(),
       type,
-      label: `Novo campo de ${type}`,
+      label:
+        type === FIELD_TYPES.SECTION
+          ? 'Nova Secção'
+          : type === FIELD_TYPES.TEXTAREA
+          ? 'Novo campo de texto longo'
+          : type === FIELD_TYPES.EMAIL
+          ? 'Novo campo de email'
+          : type === FIELD_TYPES.NUMBER
+          ? 'Novo campo numérico'
+          : type === FIELD_TYPES.DATE
+          ? 'Novo campo de data'
+          : `Novo campo de ${type}`,
       description: '',
       required: false,
-      options: (type === FIELD_TYPES.RADIO || type === FIELD_TYPES.DROPDOWN)
-        ? ['Opção 1']
-        : [],
+      options:
+        type === FIELD_TYPES.RADIO ||
+        type === FIELD_TYPES.DROPDOWN ||
+        type === FIELD_TYPES.CHECKBOX
+          ? ['Opção 1']
+          : [],
       order: newIndex + 1,
       page: normalizedTargetPage,
+      placeholder:
+        type === FIELD_TYPES.TEXTAREA
+          ? 'Digite a resposta...'
+          : type === FIELD_TYPES.EMAIL
+          ? 'nome@exemplo.com'
+          : type === FIELD_TYPES.NUMBER
+          ? '0'
+          : type === FIELD_TYPES.DATE
+          ? 'YYYY-MM-DD'
+          : '',
 
-      ...(type === FIELD_TYPES.LABEL
+      ...(type === FIELD_TYPES.LABEL || type === FIELD_TYPES.SECTION
         ? {
-            fontSize: 20,
+            fontSize: type === FIELD_TYPES.SECTION ? 24 : 20,
             fontWeight: 'bold',
             textAlign: 'left',
           }
         : {}),
+
+      ...(type === FIELD_TYPES.SECTION ? { fields: [] } : {}),
 
       // Se houver coordenadas de drop, usamos. Senão, vai para a posição padrão.
       x: dropX !== null ? dropX : 40,

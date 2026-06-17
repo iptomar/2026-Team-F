@@ -6,12 +6,16 @@
 
 import React, { useRef, useState } from "react";
 import {
+  AlignJustify,
+  Calendar,
   CheckSquare,
   ChevronDown,
   CircleDot,
   CirclePlus,
   Edit3,
   GripVertical,
+  Hash,
+  Mail,
   MoveDown,
   MoveUp,
   MoreHorizontal,
@@ -93,6 +97,36 @@ const FieldCard = ({
       label: "Dropdown",
       badge: "bg-orange-50 text-orange-700 border-orange-200",
       iconBox: "bg-orange-50 text-orange-700 border-orange-100",
+    },
+    [FIELD_TYPES.TEXTAREA]: {
+      icon: AlignJustify,
+      label: "Texto Longo",
+      badge: "bg-slate-50 text-slate-700 border-slate-200",
+      iconBox: "bg-slate-50 text-slate-700 border-slate-100",
+    },
+    [FIELD_TYPES.EMAIL]: {
+      icon: Mail,
+      label: "Email",
+      badge: "bg-cyan-50 text-cyan-700 border-cyan-200",
+      iconBox: "bg-cyan-50 text-cyan-700 border-cyan-100",
+    },
+    [FIELD_TYPES.NUMBER]: {
+      icon: Hash,
+      label: "Número",
+      badge: "bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200",
+      iconBox: "bg-fuchsia-50 text-fuchsia-700 border-fuchsia-100",
+    },
+    [FIELD_TYPES.DATE]: {
+      icon: Calendar,
+      label: "Data",
+      badge: "bg-sky-50 text-sky-700 border-sky-200",
+      iconBox: "bg-sky-50 text-sky-700 border-sky-100",
+    },
+    [FIELD_TYPES.SECTION]: {
+      icon: AlignJustify,
+      label: "Secção",
+      badge: "bg-indigo-50 text-indigo-700 border-indigo-200",
+      iconBox: "bg-indigo-50 text-indigo-700 border-indigo-100",
     },
   };
 

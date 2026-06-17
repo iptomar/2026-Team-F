@@ -252,3 +252,156 @@ export const FormTextInput = ({
     />
   </FieldWrapper>
 );
+
+// ======================================================
+// 6. CAMPO DE TEXTO LONGO
+// ======================================================
+export const FormTextArea = ({
+  label,
+  required,
+  error,
+  isPreview = false,
+  value = '',
+  onChange,
+  placeholder = 'Digite aqui a sua resposta...'
+}) => (
+  <FieldWrapper label={label} required={required} error={error}>
+    <textarea
+      rows={5}
+      value={value || ''}
+      onChange={(e) => onChange?.(e.target.value)}
+      placeholder={placeholder}
+      className={`w-full p-3 border rounded-xl bg-white text-sm font-medium text-slate-700 transition-all outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${
+        isPreview ? 'hover:border-slate-300' : 'cursor-not-allowed opacity-80'
+      }`}
+      disabled={!isPreview}
+    />
+  </FieldWrapper>
+);
+
+// ======================================================
+// 7. CAMPO DE EMAIL
+// ======================================================
+export const FormEmailInput = ({
+  label,
+  required,
+  error,
+  isPreview = false,
+  value = '',
+  onChange,
+  placeholder = 'nome@exemplo.com'
+}) => (
+  <FieldWrapper label={label} required={required} error={error}>
+    <input
+      type="email"
+      value={value || ''}
+      onChange={(e) => onChange?.(e.target.value)}
+      placeholder={placeholder}
+      className={`w-full p-3 border rounded-xl bg-white text-sm font-medium text-slate-700 transition-all outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${
+        isPreview ? 'hover:border-slate-300' : 'cursor-not-allowed opacity-80'
+      }`}
+      disabled={!isPreview}
+    />
+  </FieldWrapper>
+);
+
+// ======================================================
+// 8. CAMPO NUMÉRICO
+// ======================================================
+export const FormNumberInput = ({
+  label,
+  required,
+  error,
+  isPreview = false,
+  value = '',
+  onChange,
+  placeholder = '0'
+}) => (
+  <FieldWrapper label={label} required={required} error={error}>
+    <input
+      type="number"
+      value={value || ''}
+      onChange={(e) => onChange?.(e.target.value)}
+      placeholder={placeholder}
+      className={`w-full p-3 border rounded-xl bg-white text-sm font-medium text-slate-700 transition-all outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${
+        isPreview ? 'hover:border-slate-300' : 'cursor-not-allowed opacity-80'
+      }`}
+      disabled={!isPreview}
+    />
+  </FieldWrapper>
+);
+
+// ======================================================
+// 9. CAMPO DE DATA
+// ======================================================
+export const FormDateInput = ({
+  label,
+  required,
+  error,
+  isPreview = false,
+  value = '',
+  onChange,
+}) => (
+  <FieldWrapper label={label} required={required} error={error}>
+    <input
+      type="date"
+      value={value || ''}
+      onChange={(e) => onChange?.(e.target.value)}
+      className={`w-full p-3 border rounded-xl bg-white text-sm font-medium text-slate-700 transition-all outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${
+        isPreview ? 'hover:border-slate-300' : 'cursor-not-allowed opacity-80'
+      }`}
+      disabled={!isPreview}
+    />
+  </FieldWrapper>
+);
+
+// ======================================================
+// 10. CABEÇALHO DE SECÇÃO
+// ======================================================
+export const FormSectionHeader = ({
+  value,
+  description,
+  fontSize = 24,
+  fontWeight = 'bold',
+  textAlign = 'left',
+}) => {
+  const parsedFontSize = Number(fontSize);
+
+  const safeFontSize = Number.isFinite(parsedFontSize)
+    ? Math.min(48, Math.max(16, parsedFontSize))
+    : 24;
+
+  const safeFontWeight = ['normal', '500', '600', 'bold'].includes(fontWeight)
+    ? fontWeight
+    : 'bold';
+
+  const safeTextAlign = ['left', 'center', 'right', 'justify'].includes(textAlign)
+    ? textAlign
+    : 'left';
+
+  return (
+    <div className="p-5 border border-indigo-100 rounded-2xl bg-indigo-50">
+      <h3
+        className="text-indigo-900 leading-snug"
+        style={{
+          fontSize: `${safeFontSize}px`,
+          fontWeight: safeFontWeight,
+          textAlign: safeTextAlign,
+        }}
+      >
+        {value || 'Nova Secção'}
+      </h3>
+
+      {description && (
+        <p
+          className="text-sm text-indigo-700 mt-2 leading-relaxed"
+          style={{
+            textAlign: safeTextAlign,
+          }}
+        >
+          {description}
+        </p>
+      )}
+    </div>
+  );
+};

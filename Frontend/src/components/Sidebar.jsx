@@ -1,9 +1,13 @@
 import React from "react";
 import {
+  AlignJustify,
+  Calendar,
   CheckSquare,
   ChevronDown,
   CircleDot,
+  Hash,
   Info,
+  Mail,
   MousePointer2,
   PanelLeftClose,
   PanelLeftOpen,
@@ -42,6 +46,41 @@ const Sidebar = ({ addField, FIELD_TYPES, collapsed = false, onToggle }) => {
       color: "orange",
     },
     {
+      type: FIELD_TYPES.TEXTAREA,
+      icon: AlignJustify,
+      title: "Texto Longo",
+      description: "Campo maior para respostas detalhadas",
+      color: "slate",
+    },
+    {
+      type: FIELD_TYPES.EMAIL,
+      icon: Mail,
+      title: "Email",
+      description: "Entrada de email para contatos",
+      color: "cyan",
+    },
+    {
+      type: FIELD_TYPES.NUMBER,
+      icon: Hash,
+      title: "Número",
+      description: "Campo numérico para quantidades",
+      color: "fuchsia",
+    },
+    {
+      type: FIELD_TYPES.DATE,
+      icon: Calendar,
+      title: "Data",
+      description: "Seleção de data para agendamentos",
+      color: "sky",
+    },
+    {
+      type: FIELD_TYPES.SECTION,
+      icon: AlignJustify,
+      title: "Secção",
+      description: "Agrupa campos em uma nova seção",
+      color: "indigo",
+    },
+    {
       type: FIELD_TYPES.TEXT,
       icon: TextCursor,
       title: "Campo de Texto",
@@ -75,6 +114,31 @@ const Sidebar = ({ addField, FIELD_TYPES, collapsed = false, onToggle }) => {
       card: "bg-amber-50 hover:bg-amber-100 border-amber-200 text-amber-800",
       icon: "bg-white text-amber-700",
       dock: "text-amber-700 hover:bg-amber-50 hover:border-amber-200",
+    },
+    slate: {
+      card: "bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-800",
+      icon: "bg-white text-slate-700",
+      dock: "text-slate-700 hover:bg-slate-50 hover:border-slate-200",
+    },
+    cyan: {
+      card: "bg-cyan-50 hover:bg-cyan-100 border-cyan-200 text-cyan-800",
+      icon: "bg-white text-cyan-700",
+      dock: "text-cyan-700 hover:bg-cyan-50 hover:border-cyan-200",
+    },
+    fuchsia: {
+      card: "bg-fuchsia-50 hover:bg-fuchsia-100 border-fuchsia-200 text-fuchsia-800",
+      icon: "bg-white text-fuchsia-700",
+      dock: "text-fuchsia-700 hover:bg-fuchsia-50 hover:border-fuchsia-200",
+    },
+    sky: {
+      card: "bg-sky-50 hover:bg-sky-100 border-sky-200 text-sky-800",
+      icon: "bg-white text-sky-700",
+      dock: "text-sky-700 hover:bg-sky-50 hover:border-sky-200",
+    },
+    indigo: {
+      card: "bg-indigo-50 hover:bg-indigo-100 border-indigo-200 text-indigo-800",
+      icon: "bg-white text-indigo-700",
+      dock: "text-indigo-700 hover:bg-indigo-50 hover:border-indigo-200",
     },
   };
 

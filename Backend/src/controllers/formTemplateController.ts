@@ -31,7 +31,7 @@ const allowedFieldTypes: FormFieldType[] = [
   "spacer",
 ];
 
-const fieldTypesWithOptions: FormFieldType[] = ["radio", "dropdown"];
+const fieldTypesWithOptions: FormFieldType[] = ["radio", "dropdown", "checkbox"];
 
 const fieldTypesWithRangeValidation: FormFieldType[] = ["number", "date"];
 

@@ -1,8 +1,12 @@
 import React from "react";
 import {
+  AlignJustify,
+  Calendar,
   CheckSquare,
   ChevronDown,
   CircleDot,
+  Hash,
+  Mail,
   Plus,
   TextCursor,
   Type,
@@ -33,6 +37,36 @@ const Toolbar = ({ addField, FIELD_TYPES }) => {
       icon: ChevronDown,
       label: "Dropdown",
       className: "bg-orange-50 hover:bg-orange-100 text-orange-700 border-orange-200",
+    },
+    {
+      type: FIELD_TYPES.TEXTAREA,
+      icon: AlignJustify,
+      label: "Texto Longo",
+      className: "bg-slate-600 hover:bg-slate-700 text-white border-slate-600",
+    },
+    {
+      type: FIELD_TYPES.EMAIL,
+      icon: Mail,
+      label: "Email",
+      className: "bg-cyan-600 hover:bg-cyan-700 text-white border-cyan-600",
+    },
+    {
+      type: FIELD_TYPES.NUMBER,
+      icon: Hash,
+      label: "Número",
+      className: "bg-fuchsia-600 hover:bg-fuchsia-700 text-white border-fuchsia-600",
+    },
+    {
+      type: FIELD_TYPES.DATE,
+      icon: Calendar,
+      label: "Data",
+      className: "bg-sky-600 hover:bg-sky-700 text-white border-sky-600",
+    },
+    {
+      type: FIELD_TYPES.SECTION,
+      icon: AlignJustify,
+      label: "Secção",
+      className: "bg-indigo-600 hover:bg-indigo-700 text-white border-indigo-600",
     },
     {
       type: FIELD_TYPES.TEXT,

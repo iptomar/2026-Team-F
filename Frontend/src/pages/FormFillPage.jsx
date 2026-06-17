@@ -6,10 +6,15 @@
 import React, { useState, useEffect } from 'react';
 import {
   FormLabel,
+  FormSectionHeader,
   FormRadioGroup,
   FormCheckbox,
   FormDropdown,
   FormTextInput,
+  FormTextArea,
+  FormEmailInput,
+  FormNumberInput,
+  FormDateInput,
 } from '../components/DynamicElements';
 
 const FormFillPage = ({ templateId, onBack }) => {
@@ -77,7 +82,7 @@ const FormFillPage = ({ templateId, onBack }) => {
   const validarPaginaAtual = () => {
     const camposObrigatorios = currentFields.filter((f) => f.required);
     for (const field of camposObrigatorios) {
-      if (field.type === 'label') continue;
+      if (field.type === 'label' || field.type === 'section') continue;
       const valor = formData[field.id];
       if (
         valor === undefined || valor === null || valor === '' || valor === false ||
@@ -202,6 +207,57 @@ const FormFillPage = ({ templateId, onBack }) => {
             onChange={(valor) => handleInputChange(field.id, valor)} />
         );
 
+      case 'textarea':
+        return (
+          <FormTextArea
+            label={field.label}
+            required={field.required}
+            isPreview={true}
+            value={valorAtual}
+            onChange={(valor) => handleInputChange(field.id, valor)} />
+        );
+
+      case 'email':
+        return (
+          <FormEmailInput
+            label={field.label}
+            required={field.required}
+            isPreview={true}
+            value={valorAtual}
+            onChange={(valor) => handleInputChange(field.id, valor)} />
+        );
+
+      case 'number':
+        return (
+          <FormNumberInput
+            label={field.label}
+            required={field.required}
+            isPreview={true}
+            value={valorAtual}
+            onChange={(valor) => handleInputChange(field.id, valor)} />
+        );
+
+      case 'date':
+        return (
+          <FormDateInput
+            label={field.label}
+            required={field.required}
+            isPreview={true}
+            value={valorAtual}
+            onChange={(valor) => handleInputChange(field.id, valor)} />
+        );
+
+      case 'section':
+        return (
+          <FormSectionHeader
+            value={field.label}
+            description={field.description}
+            fontSize={field.fontSize}
+            fontWeight={field.fontWeight}
+            textAlign={field.textAlign}
+          />
+        );
+
       default:
         return null;
     }
@@ -304,12 +360,38 @@ const FormFillPage = ({ templateId, onBack }) => {
             )}
 
             {/* Campos */}
-            {sortedFields.length === 0 ? (
+            {pageCount > 1 && (
+              <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+                <p className="text-sm text-slate-500">
+                  Página {currentPage} de {pageCount}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={handlePrevPage}
+                    disabled={currentPage <= 1}
+                    className="px-4 py-2 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-60 disabled:cursor-not-allowed transition"
+                  >
+                    Anterior
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleNextPage}
+                    disabled={currentPage >= pageCount}
+                    className="px-4 py-2 rounded-xl border border-slate-200 bg-slate-800 text-white hover:bg-slate-900 disabled:opacity-60 disabled:cursor-not-allowed transition"
+                  >
+                    Próxima
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {currentFields.length === 0 ? (
               <p className="text-center text-gray-400 py-8">
-                Este formulário não contém campos.
+                Esta página não contém campos.
               </p>
             ) : (
-              sortedFields.map((field) => (
+              currentFields.map((field) => (
                 <div key={field.id} className="mb-6">
                   {renderField(field)}
                 </div>

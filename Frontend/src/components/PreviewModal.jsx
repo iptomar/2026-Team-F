@@ -6,6 +6,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
+  AlignJustify,
+  Calendar,
   Eye,
   Grid3X3,
   Maximize2,
@@ -17,10 +19,15 @@ import {
 
 import {
   FormLabel,
+  FormSectionHeader,
   FormRadioGroup,
   FormCheckbox,
   FormDropdown,
   FormTextInput,
+  FormTextArea,
+  FormEmailInput,
+  FormNumberInput,
+  FormDateInput,
 } from './DynamicElements';
 
 const GRID_SIZE = 10;
@@ -121,6 +128,9 @@ const PreviewModal = ({
   const validateCurrentPage = () => {
     const requiredFields = currentFields.filter((f) => f.required);
     for (const field of requiredFields) {
+      if (field.type === 'label' || field.type === 'section') {
+        continue;
+      }
       const value = previewData[field.id];
       if (
         value === undefined || 
@@ -205,6 +215,61 @@ const PreviewModal = ({
             isPreview={true}
             value={currentValue}
             onChange={(value) => handlePreviewChange(field.id, value)}
+          />
+        );
+
+      case 'textarea':
+        return (
+          <FormTextArea
+            label={field.label}
+            required={field.required}
+            isPreview={true}
+            value={currentValue}
+            onChange={(value) => handlePreviewChange(field.id, value)}
+          />
+        );
+
+      case 'email':
+        return (
+          <FormEmailInput
+            label={field.label}
+            required={field.required}
+            isPreview={true}
+            value={currentValue}
+            onChange={(value) => handlePreviewChange(field.id, value)}
+          />
+        );
+
+      case 'number':
+        return (
+          <FormNumberInput
+            label={field.label}
+            required={field.required}
+            isPreview={true}
+            value={currentValue}
+            onChange={(value) => handlePreviewChange(field.id, value)}
+          />
+        );
+
+      case 'date':
+        return (
+          <FormDateInput
+            label={field.label}
+            required={field.required}
+            isPreview={true}
+            value={currentValue}
+            onChange={(value) => handlePreviewChange(field.id, value)}
+          />
+        );
+
+      case 'section':
+        return (
+          <FormSectionHeader
+            value={field.label}
+            description={field.description}
+            fontSize={field.fontSize}
+            fontWeight={field.fontWeight}
+            textAlign={field.textAlign}
           />
         );
 
