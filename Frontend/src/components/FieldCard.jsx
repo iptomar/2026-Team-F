@@ -182,6 +182,9 @@ const FieldCard = ({
   // ======================================================
   // DRAG
   // ======================================================
+ // ======================================================
+  // DRAG (AGORA COM LIMITES DA PÁGINA)
+  // ======================================================
   const handleDragHandlePointerDown = (event) => {
     if (event.button !== 0) return;
 
@@ -196,19 +199,29 @@ const FieldCard = ({
     const startY = typeof field.y === "number" ? field.y : index * 110;
     const scale = zoomScale || 1;
 
+    // 1. Descobrir os limites reais da folha branca atual
+    const pageElement = cardRef.current?.closest('[data-page-number]');
+    const pageWidth = pageElement ? pageElement.offsetWidth : 794;
+    const pageHeight = pageElement ? pageElement.offsetHeight : 1123;
+
+    // 2. Descobrir o tamanho do próprio componente
+    const currentWidth = typeof field.width === "number" ? field.width : DEFAULT_FIELD_WIDTH;
+    const currentHeight = typeof field.height === "number" ? field.height : cardRef.current?.offsetHeight ?? 100;
+
     setIsDragging(true);
     document.body.style.cursor = "grabbing";
     document.body.style.userSelect = "none";
 
     const onPointerMove = (moveEvent) => {
+      // 3. A Matemática Mágica: Impede de ser menor que 0 E impede de ultrapassar a página
       const rawX = Math.max(
         0,
-        startX + (moveEvent.clientX - startMouseX) / scale
+        Math.min(pageWidth - currentWidth, startX + (moveEvent.clientX - startMouseX) / scale)
       );
 
       const rawY = Math.max(
         0,
-        startY + (moveEvent.clientY - startMouseY) / scale
+        Math.min(pageHeight - currentHeight, startY + (moveEvent.clientY - startMouseY) / scale)
       );
 
       onPositionChange?.(
@@ -224,12 +237,12 @@ const FieldCard = ({
     const onPointerUp = (upEvent) => {
       const rawX = Math.max(
         0,
-        startX + (upEvent.clientX - startMouseX) / scale
+        Math.min(pageWidth - currentWidth, startX + (upEvent.clientX - startMouseX) / scale)
       );
 
       const rawY = Math.max(
         0,
-        startY + (upEvent.clientY - startMouseY) / scale
+        Math.min(pageHeight - currentHeight, startY + (upEvent.clientY - startMouseY) / scale)
       );
 
       onPositionChange?.(
@@ -252,7 +265,6 @@ const FieldCard = ({
     window.addEventListener("pointermove", onPointerMove);
     window.addEventListener("pointerup", onPointerUp);
   };
-
   // ======================================================
   // RESIZE
   // ======================================================
@@ -265,31 +277,30 @@ const FieldCard = ({
     const startMouseX = event.clientX;
     const startMouseY = event.clientY;
 
-    const startWidth =
-      typeof field.width === "number"
-        ? field.width
-        : cardRef.current?.offsetWidth ?? DEFAULT_FIELD_WIDTH;
-
-    const startHeight =
-      typeof field.height === "number"
-        ? field.height
-        : cardRef.current?.offsetHeight ?? 100;
+    const startWidth = typeof field.width === "number" ? field.width : cardRef.current?.offsetWidth ?? DEFAULT_FIELD_WIDTH;
+    const startHeight = typeof field.height === "number" ? field.height : cardRef.current?.offsetHeight ?? 100;
 
     const scale = zoomScale || 1;
+
+    // 1. Descobrir os limites reais da folha branca atual
+    const pageElement = cardRef.current?.closest('[data-page-number]');
+    const pageWidth = pageElement ? pageElement.offsetWidth : 794;
+    const pageHeight = pageElement ? pageElement.offsetHeight : 1123;
 
     setIsResizing(true);
     document.body.style.cursor = "se-resize";
     document.body.style.userSelect = "none";
 
     const onPointerMove = (moveEvent) => {
+      // 2. Impede que a caixa seja esticada para lá da largura/altura da página
       const rawWidth = Math.max(
         MIN_FIELD_WIDTH,
-        startWidth + (moveEvent.clientX - startMouseX) / scale
+        Math.min(pageWidth - fieldLeft, startWidth + (moveEvent.clientX - startMouseX) / scale)
       );
 
       const rawHeight = Math.max(
         MIN_FIELD_HEIGHT,
-        startHeight + (moveEvent.clientY - startMouseY) / scale
+        Math.min(pageHeight - fieldTop, startHeight + (moveEvent.clientY - startMouseY) / scale)
       );
 
       onSizeChange?.(
@@ -305,12 +316,12 @@ const FieldCard = ({
     const onPointerUp = (upEvent) => {
       const rawWidth = Math.max(
         MIN_FIELD_WIDTH,
-        startWidth + (upEvent.clientX - startMouseX) / scale
+        Math.min(pageWidth - fieldLeft, startWidth + (upEvent.clientX - startMouseX) / scale)
       );
 
       const rawHeight = Math.max(
         MIN_FIELD_HEIGHT,
-        startHeight + (upEvent.clientY - startMouseY) / scale
+        Math.min(pageHeight - fieldTop, startHeight + (upEvent.clientY - startMouseY) / scale)
       );
 
       onSizeChange?.(
@@ -732,6 +743,79 @@ const FieldCard = ({
                 </>
               )}
 
+           {/* ==================================================
+                NOVA SECÇÃO: VALIDAÇÕES AVANÇADAS (APENAS PARA TEXTO)
+                ================================================== */}
+            {editData.type === FIELD_TYPES.TEXT &&
+              renderEditorSection(
+                "validations",
+                "Validações",
+                "Limites e formato do texto",
+                <>
+                  <div className="grid grid-cols-2 gap-3 mb-3">
+                    <div>
+                      <label className="block text-xs font-black uppercase tracking-wide text-slate-500 mb-1.5">
+                        Mín. Caracteres
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={editData.minLength || ""}
+                        onChange={(event) =>
+                          setEditData({
+                            ...editData,
+                            minLength: event.target.value ? Number(event.target.value) : null,
+                          })
+                        }
+                        className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+                        placeholder="Ex: 5"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-black uppercase tracking-wide text-slate-500 mb-1.5">
+                        Máx. Caracteres
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={editData.maxLength || ""}
+                        onChange={(event) =>
+                          setEditData({
+                            ...editData,
+                            maxLength: event.target.value ? Number(event.target.value) : null,
+                          })
+                        }
+                        className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+                        placeholder="Ex: 255"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-black uppercase tracking-wide text-slate-500 mb-1.5">
+                      Expressão Regular (Regex)
+                    </label>
+                    <input
+                      type="text"
+                      value={editData.pattern || ""}
+                      onChange={(event) =>
+                        setEditData({
+                          ...editData,
+                          pattern: event.target.value,
+                        })
+                      }
+                      className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition font-mono"
+                      placeholder="Ex: ^[a-zA-Z]+$"
+                    />
+                    <p className="text-[10px] text-slate-400 mt-1.5 leading-relaxed">
+                      Útil para validar NIF, Email, Código Postal, etc. Deixe em branco se não aplicável.
+                    </p>
+                  </div>
+                </>
+              )}
+
+            {/* ==================================================
+                SECÇÃO DE OPÇÕES (RADIOS, DROPDOWNS, CHECKBOXES)
+                ================================================== */}
             {(editData.type === FIELD_TYPES.RADIO ||
               editData.type === FIELD_TYPES.DROPDOWN ||
               editData.type === FIELD_TYPES.CHECKBOX) &&
@@ -740,7 +824,7 @@ const FieldCard = ({
                 "Opções",
                 "Adicionar, editar ou remover",
                 <>
-                {(field.type === FIELD_TYPES.RADIO || field.type === FIELD_TYPES.DROPDOWN) && (
+                {(editData.type === FIELD_TYPES.RADIO || editData.type === FIELD_TYPES.DROPDOWN) && (
                   <div className="space-y-2">
                     {(editData.options || []).map((option, optionIndex) => (
                       <div key={optionIndex} className="flex gap-2">
@@ -766,8 +850,8 @@ const FieldCard = ({
                     ))}
                   </div>
                 )}
-                {(field.type === FIELD_TYPES.RADIO ||
-                  field.type === FIELD_TYPES.DROPDOWN) && (
+                {(editData.type === FIELD_TYPES.RADIO ||
+                  editData.type === FIELD_TYPES.DROPDOWN) && (
                   <button
                     type="button"
                     onClick={addOption}
