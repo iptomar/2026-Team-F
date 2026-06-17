@@ -208,6 +208,14 @@ const normalizeFieldForDatabase = (field, index) => {
     required: Boolean(field.required),
     order: typeof field.order === 'number' ? field.order : index + 1,
     page: getFieldPage(field),
+    description: field.description || '',
+    fontSize: field.fontSize,
+    fontWeight: field.fontWeight,
+    textAlign: field.textAlign,
+    x: field.x,
+    y: field.y,
+    width: field.width,
+    height: field.height,
   };
 
   if (fieldTypeUsesOptions(normalizedField.type)) {
