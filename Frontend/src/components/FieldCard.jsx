@@ -593,6 +593,7 @@ const FieldCard = ({
                   <input
                     type="text"
                     value={editData.label || ""}
+                    maxLength={field.type === FIELD_TYPES.LABEL ? 100 : undefined}
                     onChange={(event) =>
                       setEditData({
                         ...editData,
@@ -606,6 +607,11 @@ const FieldCard = ({
                         : "Nome do campo"
                     }
                   />
+                  {field.type === FIELD_TYPES.LABEL && (
+                    <p className="mt-1 text-xs text-slate-400">
+                      {(editData.label || '').length}/100 caracteres
+                    </p>
+                  )}
                 </div>
 
                 {field.type === FIELD_TYPES.LABEL && (
