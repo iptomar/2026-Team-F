@@ -27,6 +27,7 @@ export type FormFieldType =
   | "divider"
   | "text_block"
   | "paragraph"
+  | "number_label"
   | "spacer";
 
 export type FormFieldDefaultValue = string | number | boolean | string[] | null;

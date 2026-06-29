@@ -116,6 +116,12 @@ const FieldCard = ({
       badge: "bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200",
       iconBox: "bg-fuchsia-50 text-fuchsia-700 border-fuchsia-100",
     },
+    [FIELD_TYPES.NUMBER_LABEL]: {
+      icon: Hash,
+      label: "Label Numérica",
+      badge: "bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200",
+      iconBox: "bg-fuchsia-50 text-fuchsia-700 border-fuchsia-100",
+    },
     [FIELD_TYPES.DATE]: {
       icon: Calendar,
       label: "Data",
@@ -583,36 +589,66 @@ const FieldCard = ({
               "Conteúdo",
               "Texto principal e descrição",
               <>
-                <div>
-                  <label className="block text-xs font-black uppercase tracking-wide text-slate-500 mb-1.5">
-                    {field.type === FIELD_TYPES.LABEL
-                      ? "Texto da label"
-                      : "Nome do campo"}
-                  </label>
+                {field.type !== FIELD_TYPES.NUMBER_LABEL && (
+                  <div>
+                    <label className="block text-xs font-black uppercase tracking-wide text-slate-500 mb-1.5">
+                      {field.type === FIELD_TYPES.LABEL
+                        ? "Texto da label"
+                        : "Nome do campo"}
+                    </label>
 
-                  <input
-                    type="text"
-                    value={editData.label || ""}
-                    maxLength={field.type === FIELD_TYPES.LABEL ? 100 : undefined}
-                    onChange={(event) =>
-                      setEditData({
-                        ...editData,
-                        label: event.target.value,
-                      })
-                    }
-                    className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
-                    placeholder={
-                      field.type === FIELD_TYPES.LABEL
-                        ? "Texto apresentado na label"
-                        : "Nome do campo"
-                    }
-                  />
-                  {field.type === FIELD_TYPES.LABEL && (
+                    <input
+                      type="text"
+                      value={editData.label || ""}
+                      maxLength={field.type === FIELD_TYPES.LABEL ? 100 : undefined}
+                      onChange={(event) =>
+                        setEditData({
+                          ...editData,
+                          label: event.target.value,
+                        })
+                      }
+                      className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+                      placeholder={
+                        field.type === FIELD_TYPES.LABEL
+                          ? "Texto apresentado na label"
+                          : "Nome do campo"
+                      }
+                    />
+
+                    {field.type === FIELD_TYPES.LABEL && (
+                      <p className="mt-1 text-xs text-slate-400">
+                        {(editData.label || "").length}/100 caracteres
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {field.type === FIELD_TYPES.NUMBER_LABEL && (
+                  <div>
+                    <label className="block text-xs font-black uppercase tracking-wide text-slate-500 mb-1.5">
+                      Texto numérico
+                    </label>
+
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={editData.label || ""}
+                      maxLength={10}
+                      onChange={(event) =>
+                        setEditData({
+                          ...editData,
+                          label: event.target.value.replace(/\D/g, "").slice(0, 10),
+                        })
+                      }
+                      className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+                      placeholder="Ex: 12345"
+                    />
+
                     <p className="mt-1 text-xs text-slate-400">
-                      {(editData.label || '').length}/100 caracteres
+                      {(editData.label || "").length}/10 números
                     </p>
-                  )}
-                </div>
+                  </div>
+                )}
 
                 {field.type === FIELD_TYPES.LABEL && (
                   <div className="grid grid-cols-2 gap-3">

@@ -168,6 +168,17 @@ const PreviewModal = ({
             textAlign={field.textAlign}
           />
         );
+        
+        case 'number_label':
+          return (
+            <FormLabel
+              value={field.label}
+              description={field.description}
+              fontSize={field.fontSize}
+              fontWeight={field.fontWeight}
+              textAlign={field.textAlign}
+            />
+          );
 
       case 'radio':
         return (

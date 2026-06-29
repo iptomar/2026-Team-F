@@ -25,6 +25,13 @@ const Sidebar = ({ addField, FIELD_TYPES, collapsed = false, onToggle }) => {
       color: "blue",
     },
     {
+      type: FIELD_TYPES.NUMBER_LABEL,
+      icon: Hash,
+      title: "Label Numérica",
+      description: "Texto que aceita apenas números",
+      color: "fuchsia",
+    },
+    {
       type: FIELD_TYPES.RADIO,
       icon: CircleDot,
       title: "Radio Group",

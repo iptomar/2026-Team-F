@@ -29,6 +29,7 @@ const allowedFieldTypes: FormFieldType[] = [
   "text_block",
   "paragraph",
   "spacer",
+  "number_label",
 ];
 
 const fieldTypesWithOptions: FormFieldType[] = ["radio", "dropdown", "checkbox"];

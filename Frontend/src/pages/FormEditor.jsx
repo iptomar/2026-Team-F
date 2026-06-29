@@ -62,6 +62,7 @@ const FIELD_TYPES = {
   NUMBER: 'number',
   DATE: 'date',
   SECTION: 'section',
+  NUMBER_LABEL: 'number_label',
 };
 
 // ======================================================
