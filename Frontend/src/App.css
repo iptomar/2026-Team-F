@@ -27,3 +27,17 @@ body {
 .btn-blue:hover {
   background-color: #0056b3;
 }
+
+/* Estilos de impressão: ocultar elementos interativos e simplificar layout */
+@media print {
+  .no-print { display: none !important; }
+  body { background: white !important; color: #000 !important; margin: 0; }
+  .min-h-screen { min-height: auto !important; }
+  .bg-gradient-to-br, .bg-gradient-to-r { background: transparent !important; }
+  .shadow-sm, .shadow { box-shadow: none !important; }
+  .rounded-2xl, .rounded-lg, .rounded-full { border-radius: 0 !important; }
+  .border { border: 1px solid #e5e7eb !important; }
+  .hover\:bg-gray-50:hover, .hover\:bg-slate-50:hover, .hover\:bg-indigo-50:hover { background: transparent !important; }
+  a, button { color: inherit; text-decoration: none; }
+  .divide-y > :not([hidden]) ~ :not([hidden]) { border-top-color: #e5e7eb !important; }
+}

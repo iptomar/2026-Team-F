@@ -382,7 +382,7 @@ const SubmissionDetailPage = ({ submissionId, onBack }) => {
         {/* Botão Voltar */}
         <button
           onClick={onBack}
-          className="mb-6 inline-flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition font-medium text-sm"
+          className="mb-6 inline-flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition font-medium text-sm no-print"
         >
           <svg
             className="w-4 h-4"
@@ -400,8 +400,19 @@ const SubmissionDetailPage = ({ submissionId, onBack }) => {
           Voltar à lista de submissões
         </button>
 
+        <button
+          type="button"
+          onClick={() => window.print()}
+          className="mb-6 ml-3 inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition font-medium text-sm no-print"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 9V2h12v7M6 14h12v8H6v-8zM6 9h12" />
+          </svg>
+          Imprimir
+        </button>
+
         {/* Cabeçalho com metadados */}
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden mb-8">
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden mb-8 no-print">
           <div className="bg-gradient-to-r from-indigo-50 to-blue-50 px-6 py-5 border-b border-gray-200">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div>
@@ -470,7 +481,7 @@ const SubmissionDetailPage = ({ submissionId, onBack }) => {
         </div>
 
         {/* Alteração de Estado */}
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden mb-8">
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden mb-8 no-print">
           <div className="px-6 py-4 border-b border-gray-200">
             <h3 className="text-lg font-bold text-gray-800">
               Alterar Estado da Submissão
@@ -523,7 +534,7 @@ const SubmissionDetailPage = ({ submissionId, onBack }) => {
         </div>
 
         {/* Histórico de Estados */}
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden mb-8">
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden mb-8 no-print">
           <div className="px-6 py-4 border-b border-gray-200">
             <div className="flex items-center gap-2">
               <svg className="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">

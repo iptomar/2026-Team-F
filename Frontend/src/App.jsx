@@ -192,7 +192,7 @@ function App() {
 
   return (
     <div className="App min-h-screen bg-slate-50 text-slate-900">
-      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-xl border-b border-slate-200 shadow-sm">
+      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-xl border-b border-slate-200 shadow-sm no-print">
         <div className="px-5 sm:px-8 py-4 flex flex-col gap-4">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <button
