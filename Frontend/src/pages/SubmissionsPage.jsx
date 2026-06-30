@@ -1,6 +1,45 @@
 import React, { useState, useEffect } from 'react';
 
 // ======================================================
+// MODELOS PRÉ-DEFINIDOS DA HOMEPAGE
+// Estes nomes têm de bater certo com os nomes em HomePage.jsx
+// ======================================================
+const PREDEFINED_TEMPLATES = [
+  {
+    name: 'Formulário de Contacto',
+    categoria: 'Geral',
+  },
+  {
+    name: 'Inquérito de Satisfação',
+    categoria: 'Geral',
+  },
+  {
+    name: 'Inscrição de Aluno e Matrícula',
+    categoria: 'Educação',
+  },
+  {
+    name: 'Ficha de Triagem Clínica',
+    categoria: 'Saúde',
+  },
+  {
+    name: 'Admissão e Registo de Utente',
+    categoria: 'Lares',
+  },
+  {
+    name: 'Participação Geral de Ocorrência',
+    categoria: 'Polícia',
+  },
+  {
+    name: 'Relatório de Socorro e Emergência',
+    categoria: 'Bombeiros',
+  },
+  {
+    name: 'Avaliação Trimestral de Desempenho',
+    categoria: 'Empresas',
+  },
+];
+
+// ======================================================
 // MAPEAMENTO DE BADGES DE ESTADO
 // ======================================================
 const STATUS_CONFIG = {
@@ -32,6 +71,20 @@ const STATUS_CONFIG = {
     border: 'border-blue-200',
     dot: 'bg-blue-400',
   },
+  in_progress: {
+    label: 'Em Progresso',
+    bg: 'bg-amber-50',
+    text: 'text-amber-700',
+    border: 'border-amber-200',
+    dot: 'bg-amber-400',
+  },
+  completed: {
+    label: 'Concluída',
+    bg: 'bg-emerald-50',
+    text: 'text-emerald-700',
+    border: 'border-emerald-200',
+    dot: 'bg-emerald-400',
+  },
 };
 
 const getStatusConfig = (status) =>
@@ -58,6 +111,13 @@ const formatDate = (dateString) => {
   }).format(date);
 };
 
+const normalizeText = (value) => String(value || '').trim().toLowerCase();
+
+const getPredefinedTemplateByName = (templateName) =>
+  PREDEFINED_TEMPLATES.find(
+    (template) => normalizeText(template.name) === normalizeText(templateName)
+  );
+
 // ======================================================
 // COMPONENTE PRINCIPAL
 // ======================================================
@@ -68,6 +128,7 @@ const SubmissionsPage = ({ onViewDetails }) => {
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTemplate, setSelectedTemplate] = useState('');
+  const [selectedPredefinedTemplate, setSelectedPredefinedTemplate] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
   const [selectedDate, setSelectedDate] = useState('');
 
@@ -88,6 +149,7 @@ const SubmissionsPage = ({ onViewDetails }) => {
         if (!submissionsRes.ok) {
           throw new Error(`Erro ao buscar submissões: ${submissionsRes.statusText}`);
         }
+
         if (!templatesRes.ok) {
           throw new Error(`Erro ao buscar templates: ${templatesRes.statusText}`);
         }
@@ -95,8 +157,8 @@ const SubmissionsPage = ({ onViewDetails }) => {
         const submissionsData = await submissionsRes.json();
         const templatesData = await templatesRes.json();
 
-        setSubmissions(submissionsData);
-        setTemplates(templatesData);
+        setSubmissions(Array.isArray(submissionsData) ? submissionsData : []);
+        setTemplates(Array.isArray(templatesData) ? templatesData : []);
       } catch (err) {
         console.error('Erro ao carregar dados:', err);
         setError(err.message);
@@ -112,34 +174,46 @@ const SubmissionsPage = ({ onViewDetails }) => {
   // MAPEAMENTO DE TEMPLATE POR ID
   // ======================================================
   const templateMap = {};
-  templates.forEach((t) => {
-    templateMap[t.id] = t;
+  templates.forEach((template) => {
+    templateMap[template.id] = template;
   });
 
   const getTemplateName = (templateId) =>
     templateMap[templateId]?.name || 'Formulário desconhecido';
 
+  const getTemplateCategory = (templateId) => {
+    const templateName = getTemplateName(templateId);
+    return getPredefinedTemplateByName(templateName)?.categoria || null;
+  };
+
   // ======================================================
   // FILTRO DE PESQUISA
   // ======================================================
-  const filteredSubmissions = submissions.filter((sub) => {
-    const templateName = getTemplateName(sub.form_template_id).toLowerCase();
-    const statusLabel = (getStatusConfig(sub.status).label || '').toLowerCase();
-    const term = searchTerm.toLowerCase();
+  const filteredSubmissions = submissions.filter((submission) => {
+    const templateNameRaw = getTemplateName(submission.form_template_id);
+    const templateName = normalizeText(templateNameRaw);
+    const templateCategory = normalizeText(getTemplateCategory(submission.form_template_id));
+    const statusLabel = normalizeText(getStatusConfig(submission.status).label);
+    const term = normalizeText(searchTerm);
 
     const matchesSearch =
       !term ||
       templateName.includes(term) ||
+      templateCategory.includes(term) ||
       statusLabel.includes(term) ||
-      String(sub.id || '').toLowerCase().includes(term);
+      String(submission.id || '').toLowerCase().includes(term);
 
     const matchesTemplate =
-      !selectedTemplate || sub.form_template_id === selectedTemplate;
+      !selectedTemplate || submission.form_template_id === selectedTemplate;
+
+    const matchesPredefinedTemplate =
+      !selectedPredefinedTemplate ||
+      templateName === normalizeText(selectedPredefinedTemplate);
 
     const matchesStatus =
-      !selectedStatus || sub.status === selectedStatus;
+      !selectedStatus || submission.status === selectedStatus;
 
-    const submissionDate = sub.submitted_at || sub.created_at;
+    const submissionDate = submission.submitted_at || submission.created_at;
     const formattedDate = submissionDate
       ? new Date(submissionDate).toISOString().slice(0, 10)
       : '';
@@ -147,15 +221,22 @@ const SubmissionsPage = ({ onViewDetails }) => {
     const matchesDate =
       !selectedDate || formattedDate === selectedDate;
 
-    return matchesSearch && matchesTemplate && matchesStatus && matchesDate;
+    return (
+      matchesSearch &&
+      matchesTemplate &&
+      matchesPredefinedTemplate &&
+      matchesStatus &&
+      matchesDate
+    );
   });
 
   // ======================================================
-  // Limpar filtros
+  // LIMPAR FILTROS
   // ======================================================
   const clearFilters = () => {
     setSearchTerm('');
     setSelectedTemplate('');
+    setSelectedPredefinedTemplate('');
     setSelectedStatus('');
     setSelectedDate('');
   };
@@ -182,18 +263,30 @@ const SubmissionsPage = ({ onViewDetails }) => {
 
       <div className="max-w-7xl mx-auto">
         {/* Barra de pesquisa e contagem */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-1">
-              Listagem de Submissões
-            </h2>
-            <p className="text-gray-500 text-sm">
-              {filteredSubmissions.length}{' '}
-              {filteredSubmissions.length === 1 ? 'submissão encontrada' : 'submissões encontradas'}
-            </p>
+        <div className="flex flex-col gap-4 mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-800 mb-1">
+                Listagem de Submissões
+              </h2>
+              <p className="text-gray-500 text-sm">
+                {filteredSubmissions.length}{' '}
+                {filteredSubmissions.length === 1
+                  ? 'submissão encontrada'
+                  : 'submissões encontradas'}
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={clearFilters}
+              className="px-4 py-2.5 rounded-xl bg-gray-100 text-gray-700 border border-gray-300 hover:bg-gray-200 font-semibold transition self-start sm:self-auto"
+            >
+              Limpar filtros
+            </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-3 w-full">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-3 w-full">
             <div className="relative">
               <svg
                 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"
@@ -218,11 +311,24 @@ const SubmissionsPage = ({ onViewDetails }) => {
             </div>
 
             <select
+              value={selectedPredefinedTemplate}
+              onChange={(e) => setSelectedPredefinedTemplate(e.target.value)}
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-xl bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+            >
+              <option value="">Todos os modelos pré-definidos</option>
+              {PREDEFINED_TEMPLATES.map((template) => (
+                <option key={template.name} value={template.name}>
+                  {template.categoria} — {template.name}
+                </option>
+              ))}
+            </select>
+
+            <select
               value={selectedTemplate}
               onChange={(e) => setSelectedTemplate(e.target.value)}
               className="w-full px-4 py-2.5 border border-gray-300 rounded-xl bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
             >
-              <option value="">Todos os formulários</option>
+              <option value="">Todos os formulários publicados/criados</option>
               {templates.map((template) => (
                 <option key={template.id} value={template.id}>
                   {template.name}
@@ -236,31 +342,23 @@ const SubmissionsPage = ({ onViewDetails }) => {
               className="w-full px-4 py-2.5 border border-gray-300 rounded-xl bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
             >
               <option value="">Todos os estados</option>
-              <option value="pending">Pendente</option>
               <option value="submitted">Submetida</option>
-              <option value="approved">Aprovada</option>
+              <option value="in_progress">Em Progresso</option>
+              <option value="completed">Concluída</option>
               <option value="rejected">Rejeitada</option>
+              <option value="pending">Pendente</option>
+              <option value="approved">Aprovada</option>
             </select>
 
-            <div className="flex gap-2">
-              <input
-                type="date"
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-xl bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
-              />
-
-              <button
-                type="button"
-                onClick={clearFilters}
-                className="px-4 py-2.5 rounded-xl bg-gray-100 text-gray-700 border border-gray-300 hover:bg-gray-200 font-semibold transition"
-              >
-                Limpar
-              </button>
-            </div>
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-xl bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+            />
           </div>
         </div>
-cd Frontend
+
         {/* Estado de carregamento */}
         {loading && (
           <div className="text-center py-16">
@@ -295,11 +393,13 @@ cd Frontend
               />
             </svg>
             <p className="text-gray-500 text-lg font-medium">
-              {searchTerm ? 'Nenhuma submissão encontrada' : 'Ainda não existem submissões'}
+              {searchTerm || selectedTemplate || selectedPredefinedTemplate || selectedStatus || selectedDate
+                ? 'Nenhuma submissão encontrada'
+                : 'Ainda não existem submissões'}
             </p>
             <p className="text-gray-400 text-sm mt-1">
-              {searchTerm
-                ? 'Tente ajustar os termos de pesquisa.'
+              {searchTerm || selectedTemplate || selectedPredefinedTemplate || selectedStatus || selectedDate
+                ? 'Tente ajustar os filtros selecionados.'
                 : 'As submissões aparecerão aqui quando os utilizadores preencherem formulários.'}
             </p>
           </div>
@@ -316,6 +416,9 @@ cd Frontend
                       Formulário de Origem
                     </th>
                     <th className="text-left px-6 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      Modelo Pré-definido
+                    </th>
+                    <th className="text-left px-6 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">
                       Data / Hora
                     </th>
                     <th className="text-left px-6 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">
@@ -329,6 +432,9 @@ cd Frontend
                 <tbody className="divide-y divide-gray-100">
                   {filteredSubmissions.map((submission) => {
                     const statusCfg = getStatusConfig(submission.status);
+                    const templateName = getTemplateName(submission.form_template_id);
+                    const predefinedTemplate = getPredefinedTemplateByName(templateName);
+
                     return (
                       <tr
                         key={submission.id}
@@ -354,13 +460,26 @@ cd Frontend
                             </div>
                             <div>
                               <p className="font-semibold text-gray-800 text-sm">
-                                {getTemplateName(submission.form_template_id)}
+                                {templateName}
                               </p>
                               <p className="text-xs text-gray-400 mt-0.5">
                                 ID: {submission.id?.slice(0, 8)}…
                               </p>
                             </div>
                           </div>
+                        </td>
+
+                        {/* Modelo Pré-definido */}
+                        <td className="px-6 py-4">
+                          {predefinedTemplate ? (
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                              {predefinedTemplate.categoria}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-gray-400 italic">
+                              Personalizado
+                            </span>
+                          )}
                         </td>
 
                         {/* Data / Hora */}
