@@ -7,11 +7,12 @@ import authRoutes from "./routes/authRoutes";
 import formTemplateRoutes from "./routes/formTemplateRoutes";
 import formSubmissionRoutes from "./routes/formSubmissionRoutes";
 import workflowRoutes from "./routes/workflowRoutes";
+import presetRoutes from "./routes/presetRoutes";
+import { seedPresets } from "./seeds/seedPresets";
 
 dotenv.config();
 
 const app = express();
-
 app.use(cors());
 app.use(express.json());
 
@@ -26,13 +27,14 @@ app.use("/auth", authRoutes);
 app.use("/form-templates", formTemplateRoutes);
 app.use("/form-submissions", formSubmissionRoutes);
 app.use("/workflows", workflowRoutes);
+app.use("/presets", presetRoutes);
 
 const PORT = process.env.PORT || 3000;
 
 AppDataSource.initialize()
-  .then(() => {
+  .then(async () => {
     console.log("Base de dados conectada com sucesso.");
-
+    await seedPresets();
     app.listen(PORT, () => {
       console.log(`Servidor a correr na porta ${PORT}`);
     });
