@@ -231,6 +231,10 @@ const normalizeFieldForDatabase = (field, index) => {
     y: field.y,
     width: field.width,
     height: field.height,
+
+    minLength: field.minLength,
+    maxLength: field.maxLength,
+    pattern: field.pattern,
   };
 
   if (fieldTypeUsesOptions(normalizedField.type)) {
@@ -913,6 +917,7 @@ const FormEditor = ({ formId, onGoHome }) => {
             label={field.label}
             required={field.required}
             value=""
+            maxLength={field.maxLength}
             isPreview={true}
           />
         );

@@ -822,7 +822,8 @@ const FieldCard = ({
            {/* ==================================================
                 NOVA SECÇÃO: VALIDAÇÕES AVANÇADAS (APENAS PARA TEXTO)
                 ================================================== */}
-            {editData.type === FIELD_TYPES.TEXT &&
+            {(editData.type === FIELD_TYPES.TEXT ||
+             editData.type === FIELD_TYPES.TEXTAREA) &&
               renderEditorSection(
                 "validations",
                 "Validações",

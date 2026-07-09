@@ -236,6 +236,7 @@ const PreviewModal = ({
             required={field.required}
             isPreview={true}
             value={currentValue}
+            maxLength={field.maxLength}
             onChange={(value) => handlePreviewChange(field.id, value)}
           />
         );

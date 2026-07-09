@@ -236,6 +236,7 @@ export const FormTextInput = ({
   isPreview = false,
   value = '',
   onChange,
+  maxLength={maxLength},
   placeholder = 'Digite aqui a sua resposta...'
 }) => (
   <FieldWrapper label={label} required={required} error={error}>
@@ -245,6 +246,7 @@ export const FormTextInput = ({
       // Correção aplicada de forma cirúrgica para extrair o valor da string digitada
       onChange={(e) => onChange?.(e.target.value)}
       placeholder={placeholder}
+      maxLength={maxLength}
       className={`w-full p-3 border rounded-xl bg-white text-sm font-medium text-slate-700 transition-all outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${
         isPreview ? 'hover:border-slate-300' : 'cursor-not-allowed opacity-80'
       }`}
@@ -259,26 +261,25 @@ export const FormTextInput = ({
 export const FormTextArea = ({
   label,
   required,
-  error,
-  isPreview = false,
-  value = '',
+  value = "",
   onChange,
-  placeholder = 'Digite aqui a sua resposta...'
-}) => (
-  <FieldWrapper label={label} required={required} error={error}>
-    <textarea
-      rows={5}
-      value={value || ''}
-      onChange={(e) => onChange?.(e.target.value)}
-      placeholder={placeholder}
-      className={`w-full p-3 border rounded-xl bg-white text-sm font-medium text-slate-700 transition-all outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${
-        isPreview ? 'hover:border-slate-300' : 'cursor-not-allowed opacity-80'
-      }`}
-      disabled={!isPreview}
-    />
-  </FieldWrapper>
-);
+  isPreview = false,
+  maxLength,
+}) => {
 
+  console.log("maxLength:", maxLength);
+
+  return (
+    <FieldWrapper label={label} required={required}>
+      <textarea
+        value={value}
+        onChange={(e) => onChange?.(e.target.value)}
+        maxLength={maxLength}
+        disabled={!isPreview}
+      />
+    </FieldWrapper>
+  );
+};
 // ======================================================
 // 7. CAMPO DE EMAIL
 // ======================================================

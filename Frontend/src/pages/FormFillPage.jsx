@@ -215,6 +215,7 @@ const FormFillPage = ({ templateId, onBack }) => {
             required={field.required}
             isPreview={true}
             value={valorAtual}
+            maxLength={field.maxLength}
             onChange={(valor) => handleInputChange(field.id, valor)} />
         );
 
