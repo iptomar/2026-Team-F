@@ -316,6 +316,8 @@ export const FormNumberInput = ({
   isPreview = false,
   value = '',
   onChange,
+  min,
+  max,
   placeholder = '0'
 }) => (
   <FieldWrapper label={label} required={required} error={error}>
@@ -324,6 +326,8 @@ export const FormNumberInput = ({
       value={value || ''}
       onChange={(e) => onChange?.(e.target.value)}
       placeholder={placeholder}
+      min={min}
+      max={max}
       className={`w-full p-3 border rounded-xl bg-white text-sm font-medium text-slate-700 transition-all outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${
         isPreview ? 'hover:border-slate-300' : 'cursor-not-allowed opacity-80'
       }`}

@@ -889,7 +889,61 @@ const FieldCard = ({
                   </div>
                 </>
               )}
+              {/* ==================================================
+                NOVA SECÇÃO: VALIDAÇÕES AVANÇADAS (APENAS PARA TEXTO)
+                ================================================== */}
 
+              {editData.type === FIELD_TYPES.NUMBER &&
+                renderEditorSection(
+                  "number-validations",
+                  "Validações",
+                  "Limites do número",
+                  <>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-black uppercase tracking-wide text-slate-500 mb-1.5">
+                          Valor mínimo
+                        </label>
+
+                        <input
+                          type="number"
+                          value={editData.min ?? ""}
+                          onChange={(event) =>
+                            setEditData({
+                              ...editData,
+                              min: event.target.value === ""
+                                ? null
+                                : Number(event.target.value),
+                            })
+                          }
+                          className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm"
+                          placeholder="Ex: 0"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-black uppercase tracking-wide text-slate-500 mb-1.5">
+                          Valor máximo
+                        </label>
+
+                        <input
+                          type="number"
+                          value={editData.max ?? ""}
+                          onChange={(event) =>
+                            setEditData({
+                              ...editData,
+                              max: event.target.value === ""
+                                ? null
+                                : Number(event.target.value),
+                            })
+                          }
+                          className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm"
+                          placeholder="Ex: 100"
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
             {/* ==================================================
                 SECÇÃO DE OPÇÕES (RADIOS, DROPDOWNS, CHECKBOXES)
                 ================================================== */}

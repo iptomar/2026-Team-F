@@ -235,6 +235,9 @@ const normalizeFieldForDatabase = (field, index) => {
     minLength: field.minLength,
     maxLength: field.maxLength,
     pattern: field.pattern,
+
+    min: field.min,
+    max: field.max,
   };
 
   if (fieldTypeUsesOptions(normalizedField.type)) {
@@ -937,6 +940,8 @@ const FormEditor = ({ formId, onGoHome }) => {
             required={field.required}
             value=""
             isPreview={true}
+            min={field.min}
+            max={field.max}
           />
         );
       case FIELD_TYPES.DATE:
